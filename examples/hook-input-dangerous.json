@@ -1,0 +1,10 @@
+{
+  "session_id": "example",
+  "cwd": "E:/Source/Mine/DocxRendererMcpServer",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "rm -rf /",
+    "description": "Clean generated files"
+  }
+}
