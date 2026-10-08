@@ -1,0 +1,14 @@
+{
+  "PermissionRequest": [
+    {
+      "matcher": "^exec$",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "\"/absolute/path/to/python\" \"/absolute/path/to/cc-ai-review/devin-command-review-hook.py\"",
+          "timeout": 60
+        }
+      ]
+    }
+  ]
+}

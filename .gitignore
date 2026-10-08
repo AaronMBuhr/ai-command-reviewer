@@ -1,4 +1,23 @@
 __pycache__/
 *.pyc
+.pytest_cache/
 .claude/settings.local.json
 .env
+
+# Real config lives here; config.example.yaml is the tracked template.
+config.yaml
+config.yml
+.claude/hooks/config.yaml
+.claude/hooks/config.yml
+
+# Live Codex wiring contains machine-specific absolute paths.
+.codex/hooks.json
+
+# Internal working notes, not part of the published project.
+dev/
+
+*.jsonl
+review-log.jsonl
+
+# Windows cache artifacts created under an unexpanded environment path.
+/%SystemDrive%/

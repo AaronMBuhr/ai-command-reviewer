@@ -1,0 +1,24 @@
+# The hook itself is not installed as a package -- it runs as standalone scripts
+# under whatever interpreter the host agent is configured with. This file exists
+# to configure the test suite and linters.
+#
+# Runtime dependencies: none, except PyYAML when a config file is used.
+# Development:  pip install -r requirements-dev.txt
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+addopts = "-q --strict-markers --strict-config"
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+# Deliberately excludes pyupgrade (UP). The hook modules are vendored and read
+# by people running whatever interpreter their agent is configured with, and
+# explicit `Optional[str]` / `Dict[str, Any]` reads unambiguously as 3.9-safe.
+# PEP 604 / PEP 585 forms work here only because of `from __future__ import
+# annotations`, which is a subtlety this file should not depend on the reader
+# knowing. CI proves 3.9 compatibility either way.
+select = ["E", "F", "W", "I", "B", "SIM"]

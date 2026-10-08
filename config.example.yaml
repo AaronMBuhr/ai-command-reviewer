@@ -1,0 +1,142 @@
+# Command safety reviewer configuration.
+#
+# Copy this file to one of the locations below -- whichever the hook finds first
+# wins. The working directory is deliberately NOT searched, so a repository you
+# clone cannot ship a config that redirects the reviewer:
+#
+#   1. the path in $CC_AI_REVIEW_CONFIG
+#   2. Windows: %APPDATA%\cc-ai-review\config.yaml
+#      macOS/Linux: ~/.config/cc-ai-review/config.yaml
+#   3. next to the hook scripts, in .claude/hooks/config.yaml
+#
+# Every setting can be overridden by an environment variable using the path to
+# the key, uppercased, with a DOUBLED underscore between segments:
+#
+#   CC_AI_REVIEW__POLICY__FAIL_MODE=deny
+#   CC_AI_REVIEW__PROVIDERS__GEMINI__MODEL=gemini-2.5-flash
+#
+# Requires PyYAML in the interpreter that runs the hook. If this file exists and
+# PyYAML is missing, the hook fails closed rather than silently reverting to
+# defaults -- a config you wrote may be stricter than the defaults.
+
+reviewer:
+  # Which LLM reviews commands: claude | chatgpt | gemini | auto | none
+  # "auto" picks the first provider below that has an API key available,
+  # in the order claude, chatgpt, gemini.
+  provider: auto
+
+  # Optional: route to your own service instead of a provider. Both take
+  # precedence over `provider`. Set these here or in the real environment --
+  # they are refused if they appear in a .env file, because .env is read from
+  # the working directory and `command` runs a subprocess.
+  url: null
+  command: null
+
+providers:
+  # Each provider takes the keys its own API understands. Unknown keys are not
+  # invented here: anything not listed can be passed verbatim via `extra_body`.
+
+  claude:
+    # The only provider with a built-in model default, because it is the one
+    # this project tests against.
+    model: claude-haiku-4-5
+    max_tokens: 512
+    temperature: 0
+    api_key_env: ANTHROPIC_API_KEY
+    # base_url: https://api.anthropic.com
+    # anthropic_version: "2023-06-01"
+
+  chatgpt:
+    # Required -- there is no default.
+    # Model names age fast. Check what your key can reach:
+    #   curl https://api.openai.com/v1/models -H "Authorization: Bearer $OPENAI_API_KEY"
+    # gpt-5.6-luna is cost-optimised and scored perfectly on this project's
+    # safety cases when last measured.
+    # Alternative: gpt-4.1-mini (older, slightly stricter, accepts temperature 0).
+    model: gpt-5.6-luna
+    max_tokens: 512
+    # MUST be null for gpt-5.6-*: those models accept only their default
+    # temperature and reject an explicit 0 with an HTTP 400. Set it to 0 if you
+    # switch to gpt-4.1-mini or another model that supports it.
+    temperature: null
+    api_key_env: OPENAI_API_KEY
+    # Reasoning models require max_completion_tokens; older models and some
+    # OpenAI-compatible gateways only accept max_tokens.
+    max_tokens_field: max_completion_tokens
+    # Holds the model to a JSON reply. Set to null if your model or gateway
+    # does not implement response_format.
+    response_format: json_object
+    # Point at any OpenAI-compatible gateway (Azure, OpenRouter, a local server).
+    # base_url: https://api.openai.com/v1
+
+  gemini:
+    # Required -- there is no default.
+    # The Gemini line moves fast -- gemini-2.0-flash and gemini-2.5-flash-lite
+    # already return 404. Check what your key can reach:
+    #   curl "https://generativelanguage.googleapis.com/v1beta/models" -H "x-goog-api-key: $GEMINI_API_KEY"
+    #
+    # Alternatives measured on this project's safety cases:
+    #   gemini-2.5-flash       ~2.6s, good judgment, but an older generation
+    #   gemini-3.5-flash-lite  ~0.7s, but ALLOWED a recursive delete -- too
+    #                          permissive to recommend for a safety reviewer
+    model: gemini-3.6-flash
+    # Thinking models emit no text until thinking finishes, so this needs real
+    # headroom. At 512 the reply comes back truncated.
+    max_output_tokens: 4096
+    api_key_env: GEMINI_API_KEY
+
+    # Gemini 3.x deprecated temperature/top_p/top_k -- they are ignored now and
+    # documented to return HTTP 400 in future models. null omits the field.
+    # Set this to 0 only if you switch to a 2.5-era model.
+    temperature: null
+
+    # Gemini 3.x replaced the numeric thinking_budget with this enum:
+    # "minimal" | "low" | "medium" | "high". Measured on this project's safety
+    # cases, all levels gave identical verdicts and ~5s latency, so "medium"
+    # costs nothing and leaves reasoning headroom for harder commands.
+    thinking_level: medium
+
+    # For 2.5-era models instead, which do not understand thinking_level:
+    # thinking_budget: 128
+    # base_url: https://generativelanguage.googleapis.com/v1beta
+
+  # Anything a provider adds later can be passed straight through without
+  # waiting for this project to add support for it:
+  #
+  # chatgpt:
+  #   extra_body:
+  #     top_p: 0.1
+  #     seed: 42
+
+policy:
+  # What to do when the reviewer errors, times out, or returns junk.
+  fail_mode: ask            # ask | deny
+
+  # Budget for the reviewer call, enforced as a hard wall-clock deadline (the
+  # socket timeout alone cannot stop a server that trickles bytes). Clamped to
+  # 120. Keep it well under your host's own hook timeout -- if the hook outruns
+  # that, the host abandons it and the command runs UNREVIEWED.
+  timeout_seconds: 20
+
+  # Auto-allow obvious read-only commands (pwd, ls, git status, ...).
+  allow_readonly: true
+
+  # If true, an external "allow" can lift a local "ask" to "allow" for ALL
+  # flags, not just the opaque-interpreter cases. Leave false unless you have
+  # read the safety model section of the README.
+  allow_external_override: false
+
+  # Skip the API call entirely when local heuristics already say "allow".
+  # Saves a request on every read-only command; the tradeoff is that the LLM
+  # never sees those commands, so it cannot catch a local false-allow.
+  skip_external_when_local_allows: false
+
+  # What to do with delete/remove commands.
+  #   auto -- deny on Codex, ask on Claude Code. Codex treats a PermissionRequest
+  #           "ask" as advisory, so only "deny" actually gates a delete there;
+  #           Claude Code enforces "ask" with a real prompt.
+  #   ask / deny -- force one behaviour on every host.
+  delete_decision: auto
+
+  # Append one JSON line per decision, including silent allows. Opt-in.
+  log_path: null

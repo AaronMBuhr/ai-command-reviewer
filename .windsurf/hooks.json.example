@@ -1,0 +1,11 @@
+{
+  "hooks": {
+    "pre_run_command": [
+      {
+        "command": "\"/absolute/path/to/python3\" \"/absolute/path/to/cc-ai-review/windsurf-command-review-hook.py\"",
+        "powershell": "& 'C:\\Path\\To\\python.exe' 'C:\\Path\\To\\cc-ai-review\\windsurf-command-review-hook.py'; exit $LASTEXITCODE",
+        "show_output": true
+      }
+    ]
+  }
+}

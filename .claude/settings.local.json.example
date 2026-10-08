@@ -1,12 +1,17 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "_comment_matcher": "PowerShell is a SEPARATE tool from Bash on Windows. With only 'Bash' here, every PowerShell command bypasses review entirely.",
+  "_comment_interpreter": "Replace <PYTHON> with an ABSOLUTE path to a real interpreter, e.g. /usr/bin/python3 or C:\\\\Users\\\\you\\\\anaconda3\\\\envs\\\\dev\\\\python.exe (backslashes must be doubled in JSON). A bare 'python' that is not on PATH makes Claude Code silently skip the hook, which looks exactly like the hook working while checking nothing. Do NOT wrap it in 'conda run' -- that does not forward stdin, so the hook receives an empty payload. install.sh / install.ps1 print this snippet with the path already filled in.",
+  "_comment_timeout": "Keep this above policy.timeout_seconds (default 20). If the hook outruns it, Claude Code abandons the hook and the command runs unreviewed.",
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Bash",
+        "matcher": "Bash|PowerShell",
         "hooks": [
           {
             "type": "command",
-            "command": "python .claude/hooks/safe-command-review-hook.py"
+            "command": "\"<PYTHON>\" \"$HOME/.claude/hooks/cc-ai-review/safe-command-review-hook.py\"",
+            "timeout": 60
           }
         ]
       }

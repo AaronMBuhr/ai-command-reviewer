@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        # The hook runs under whatever interpreter the host agent is configured
+        # with, which is frequently not the newest one available.
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.9", "3.11", "3.13"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -r requirements-dev.txt
+      - run: pytest
+
+  no-dependency-check:
+    # The hook must run on a bare interpreter with no packages installed --
+    # PyYAML is required only when a config file is present, and that path is
+    # supposed to fail with a clear message rather than a traceback.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Review a payload with no third-party packages installed
+        run: |
+          python .claude/hooks/safe-command-review-hook.py \
+            < examples/hook-input-dangerous.json | tee /dev/stderr \
+            | grep -q '"permissionDecision": "deny"'
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check .

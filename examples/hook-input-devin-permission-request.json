@@ -1,0 +1,8 @@
+{
+  "hook_event_name": "PermissionRequest",
+  "tool_name": "exec",
+  "tool_input": {
+    "command": "git diff --check",
+    "shell_id": "main"
+  }
+}

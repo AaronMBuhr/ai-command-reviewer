@@ -1,0 +1,9 @@
+{
+  "cwd": "/home/dev/myproject",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "shell",
+  "tool_input": {
+    "command": "Get-Date -Format o",
+    "description": "Check current time"
+  }
+}

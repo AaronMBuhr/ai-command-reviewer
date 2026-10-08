@@ -1,0 +1,8 @@
+# Development and CI dependencies.
+#
+# The hook itself needs none of these at runtime. PyYAML is the only runtime
+# dependency, and only when a config file is present.
+
+pytest>=7.0
+pyyaml>=6.0
+ruff>=0.6

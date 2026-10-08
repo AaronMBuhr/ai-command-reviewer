@@ -1,0 +1,34 @@
+{
+  "_comment": "Copy to your Codex hooks config and replace PYTHON and HOOK_DIR with absolute paths. On Windows, keep commandWindows free of embedded quotes because the Codex hook runner can silently skip quoted commands. These example Windows paths therefore must not contain spaces. Codex does not set CLAUDE_PROJECT_DIR, so relative paths are not reliable here. Run /hooks in Codex to review and trust changes.",
+  "hooks": {
+    "PermissionRequest": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$HOME/.claude/hooks/cc-ai-review/codex-command-review-hook.py\"",
+            "commandWindows": "set CC_AI_REVIEW__REVIEWER__PROVIDER=none&&C:\\Path\\To\\python.exe %USERPROFILE%\\.claude\\hooks\\cc-ai-review\\codex-command-review-hook.py",
+            "timeout": 60,
+            "statusMessage": "Reviewing permission request"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "_comment": "Codex documents shell commands as 'Bash'; older payloads used 'shell'. Matching both covers either spelling.",
+        "matcher": "Bash|shell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$HOME/.claude/hooks/cc-ai-review/codex-command-review-hook.py\"",
+            "commandWindows": "set CC_AI_REVIEW__REVIEWER__PROVIDER=none&&C:\\Path\\To\\python.exe %USERPROFILE%\\.claude\\hooks\\cc-ai-review\\codex-command-review-hook.py",
+            "timeout": 60,
+            "statusMessage": "Reviewing shell command"
+          }
+        ]
+      }
+    ]
+  }
+}

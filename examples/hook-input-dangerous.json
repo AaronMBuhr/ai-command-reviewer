@@ -1,6 +1,6 @@
 {
   "session_id": "example",
-  "cwd": "E:/Source/Mine/DocxRendererMcpServer",
+  "cwd": "/home/dev/myproject",
   "hook_event_name": "PreToolUse",
   "tool_name": "Bash",
   "tool_input": {

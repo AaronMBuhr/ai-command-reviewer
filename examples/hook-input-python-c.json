@@ -1,10 +1,10 @@
 {
   "session_id": "example",
-  "cwd": "E:/Source/Mine/DocxRendererMcpServer",
+  "cwd": "/home/dev/myproject",
   "hook_event_name": "PreToolUse",
   "tool_name": "Bash",
   "tool_input": {
-    "command": "cd \"E:/Source/Mine/DocxRendererMcpServer\" && python -c \"import importlib.util, json, io, zipfile, base64, shutil; print('example')\"",
+    "command": "cd \"/home/dev/myproject\" && python -c \"import importlib.util, json, io, zipfile, base64, shutil; print('example')\"",
     "description": "End-to-end Node render success path"
   }
 }
