@@ -5,12 +5,16 @@ import importlib.util
 import io
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
 
 import pytest
+from review_core import Review, ReviewResult
+
+pytestmark = pytest.mark.usefixtures("headless_confirmation")
 
 REPO = Path(__file__).resolve().parent.parent
 ADAPTER = REPO / ".claude" / "hooks" / "windsurf-command-review-hook.py"
@@ -46,7 +50,7 @@ def invoke(payload: Any, extra_env: Optional[Dict[str, str]] = None,
 @pytest.mark.parametrize("agent", ["cascade", "devin"])
 @pytest.mark.parametrize("command,code", [
     ("git status", 0),
-    ("pip install requests", 2),  # shared review is ask, host must block
+    ("pip install requests", 2),  # no GUI available in the subprocess fixture
     ("git reset --hard", 2),
     ("rm report.txt", 2),
     ("cat ~/.ssh/id_rsa", 2),
@@ -66,7 +70,9 @@ def test_decisions(agent: str, command: str, code: int, tmp_path: Path) -> None:
     assert entry["cwd"] == ("/project" if agent == "cascade" else str(Path.cwd()))
     if command == "pip install requests":
         assert entry["decision"] == "ask"
-        assert b"Blocked pending manual review" in proc.stderr
+        expected = (b"Confirmation dialog unavailable" if agent == "cascade"
+                    else b"Legacy Devin PreToolUse cannot prompt")
+        assert expected in proc.stderr
 
 
 @pytest.mark.parametrize("raw", [
@@ -129,7 +135,76 @@ def test_broken_config_blocks(agent: str, tmp_path: Path) -> None:
 def test_reviewer_failure_blocks(agent: str) -> None:
     proc = invoke(payload_for(agent), {"CC_AI_REVIEW__REVIEWER__PROVIDER": "invalid"})
     assert proc.returncode == 2
-    assert b"Blocked pending manual review" in proc.stderr
+    expected = (b"Confirmation dialog unavailable" if agent == "cascade"
+                else b"Legacy Devin PreToolUse cannot prompt")
+    assert expected in proc.stderr
+
+
+@pytest.mark.parametrize("answer,code", [(True, 0), (False, 2), (None, 2), ("yes", 2)])
+def test_ask_waits_for_explicit_approval(monkeypatch: pytest.MonkeyPatch,
+                                        answer: Any, code: int) -> None:
+    command = "bash scripts/test-db.sh EventDetailsJurisdictionTests"
+    monkeypatch.setattr(adapter_module, "read_hook_input", lambda: payload_for("cascade", command))
+    monkeypatch.setattr(sys, "argv", [str(ADAPTER)])
+    result = ReviewResult("PreToolUse", command, "/project", "",
+                          Review("ask", "Test script needs confirmation"))
+    monkeypatch.setattr(adapter_module, "review_payload", lambda *a, **kw: result)
+    calls = []
+
+    def confirm(command: str, cwd: str, reason: str) -> Any:
+        calls.append((command, cwd, reason))
+        return answer
+
+    monkeypatch.setattr(adapter_module, "confirm_command", confirm)
+    assert adapter_module.main() == code
+    assert len(calls) == 1
+    assert calls[0][:2] == (command, "/project")
+    assert "Test script needs confirmation" in calls[0][2]
+
+
+@pytest.mark.parametrize("decision,code", [("allow", 0), ("deny", 2)])
+def test_allow_and_deny_never_open_dialog(monkeypatch: pytest.MonkeyPatch,
+                                         decision: str, code: int) -> None:
+    monkeypatch.setattr(adapter_module, "read_hook_input", lambda: payload_for("cascade"))
+    monkeypatch.setattr(sys, "argv", [str(ADAPTER)])
+    result = ReviewResult("PreToolUse", "git status", "/project", "", Review(decision, "review"))
+    monkeypatch.setattr(adapter_module, "review_payload", lambda *a, **kw: result)
+    calls = []
+    monkeypatch.setattr(adapter_module, "confirm_command", lambda *args: calls.append(args))
+    assert adapter_module.main() == code
+    assert calls == []
+
+
+def test_dialog_error_blocks_with_original_reason(monkeypatch: pytest.MonkeyPatch,
+                                                  capsys: pytest.CaptureFixture) -> None:
+    monkeypatch.setattr(adapter_module, "read_hook_input", lambda: payload_for("cascade", "rm *"))
+    monkeypatch.setattr(sys, "argv", [str(ADAPTER)])
+
+    def fail(*args: Any) -> bool:
+        raise RuntimeError("display unavailable")
+
+    monkeypatch.setattr(adapter_module, "confirm_command", fail)
+    assert adapter_module.main() == 2
+    error = capsys.readouterr().err
+    assert "display unavailable" in error
+    assert "delet" in error.lower()
+
+
+@pytest.mark.parametrize("command,code", [("git diff", 0), ("rm *", 2)])
+def test_incomplete_upgrade_never_passes_an_ask(command: str, code: int, tmp_path: Path) -> None:
+    install = tmp_path / "incomplete_install"
+    install.mkdir()
+    for name in [ADAPTER.name, "review_core.py", "config.py", "providers.py"]:
+        shutil.copyfile(ADAPTER.with_name(name), install / name)
+    proc = subprocess.run(
+        [sys.executable, str(install / ADAPTER.name)],
+        input=json.dumps(payload_for("cascade", command)).encode(), capture_output=True,
+        env={**os.environ, "CC_AI_REVIEW__REVIEWER__PROVIDER": "none"}, timeout=30,
+    )
+    assert proc.returncode == code
+    if code == 2:
+        assert b"Confirmation dialog unavailable" in proc.stderr
+        assert b"command_confirmation" in proc.stderr
 
 
 @pytest.mark.parametrize("failure", [RuntimeError("review failed"), KeyboardInterrupt()])

@@ -134,7 +134,8 @@ policy:
   # What to do with delete/remove commands.
   #   auto -- deny on Codex, ask on Claude Code. Codex treats a PermissionRequest
   #           "ask" as advisory, so only "deny" actually gates a delete there;
-  #           Claude Code enforces "ask" with a real prompt.
+  #           Claude Code enforces "ask" with a real prompt. Cascade and
+  #           Antigravity enforce it with a desktop confirmation dialog.
   #   ask / deny -- force one behaviour on every host.
   delete_decision: auto
 

@@ -1,0 +1,15 @@
+{
+  "conversationId": "00000000-0000-0000-0000-000000000000",
+  "workspacePaths": ["/path/to/workspace"],
+  "modelName": "auto",
+  "lastUserInput": "Check the working tree",
+  "stepIdx": 2,
+  "toolCall": {
+    "name": "run_command",
+    "args": {
+      "CommandLine": "git diff --check",
+      "WaitMsBeforeAsync": 5000,
+      "toolSummary": "Check whitespace errors"
+    }
+  }
+}

@@ -1,17 +1,26 @@
 #!/usr/bin/env python3
 """Shell review for Cascade pre_run_command and Devin Local PreToolUse.
 
-Both hosts accept exit 0 to proceed and exit 2 to block. Neither documents an
-enforceable `ask` response, so anything except `allow` blocks with a reason on
-stderr. The shared log retains the original review decision (including `ask`).
+Both hosts accept exit 0 to proceed and exit 2 to block. Cascade asks through
+a synchronous desktop dialog; only Allow once releases that invocation. Legacy
+Devin PreToolUse registrations should migrate to the PermissionRequest adapter.
 """
 from __future__ import annotations
 
 import contextlib
 import sys
+from pathlib import Path
 from typing import Any, Dict
 
 from review_core import read_hook_input, render_reason, review_payload, stats_main
+
+
+def confirm_command(command: str, cwd: str, reason: str) -> bool:
+    # Load inside main's blocking boundary. An incomplete upgrade missing the
+    # GUI helper must not exit 1, which Cascade treats as nonblocking.
+    from command_confirmation import confirm_command as show_confirmation
+
+    return show_confirmation(command, cwd, reason)
 
 
 def normalize_payload(payload: Any) -> Dict[str, Any]:
@@ -75,18 +84,27 @@ def main() -> int:
         sys.stderr.reconfigure(encoding="utf-8", errors="backslashreplace")
 
     try:
-        payload = normalize_payload(read_hook_input())
-        # `ask` is blocked below, so the normal ask-based delete policy remains
-        # enforced without changing the shared policy for other hosts.
+        host_payload = read_hook_input()
+        payload = normalize_payload(host_payload)
         result = review_payload(payload, host="windsurf")
         if result.review.decision == "allow":
             return 0
         reason = render_reason(result.review)
         if result.review.decision == "ask":
-            reason = (
-                "Blocked pending manual review: Devin/Windsurf hooks do not provide "
-                "a documented approval prompt for an ask decision.\n" + reason
-            )
+            if "agent_action_name" not in host_payload:
+                return block("Legacy Devin PreToolUse cannot prompt. Register "
+                             "devin-command-review-hook.py for PermissionRequest instead.\n"
+                             + reason)
+            command = payload["tool_input"]["command"]
+            cwd = payload["tool_input"]["cwd"] or str(Path.cwd())
+            try:
+                approved = confirm_command(command, cwd, reason)
+            except Exception as exc:
+                return block(f"Confirmation dialog unavailable or failed; command blocked. "
+                             f"{type(exc).__name__}: {exc}\n{reason}")
+            if approved is True:
+                return 0
+            return block("Command cancelled in the confirmation dialog.\n" + reason)
         return block(reason)
     except BaseException as exc:  # noqa: BLE001
         # As with the existing adapters, an interruption/config/runtime failure

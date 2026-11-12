@@ -20,6 +20,7 @@ def printed_config(output: str, marker: str) -> Dict[str, Any]:
     return value
 
 
+@pytest.mark.usefixtures("headless_confirmation")
 def test_installer_commands_preserve_blocking_exit_code(tmp_path: Path) -> None:
     # Paths with spaces exercise the quoting the generated host commands need.
     task_home = tmp_path / "test user"
@@ -43,6 +44,11 @@ def test_installer_commands_preserve_blocking_exit_code(tmp_path: Path) -> None:
     assert installed.returncode == 0, installed.stderr
     script = task_home / ".claude" / "hooks" / "cc-ai-review" / "windsurf-command-review-hook.py"
     assert script.read_bytes() == (REPO / ".claude" / "hooks" / script.name).read_bytes()
+    dialog = script.with_name("command_confirmation.py")
+    assert dialog.read_bytes() == (REPO / ".claude" / "hooks" / dialog.name).read_bytes()
+    feedback = script.with_name("devin_feedback.py")
+    assert feedback.read_bytes() == (REPO / ".claude" / "hooks" / feedback.name).read_bytes()
+    assert "ask opens a desktop Allow once / Cancel dialog" in installed.stdout
 
     cascade = printed_config(installed.stdout, "Using Cascade in Devin/Windsurf?")
     hook = cascade["hooks"]["pre_run_command"][0]

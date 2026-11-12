@@ -2,13 +2,15 @@
 """Devin Local PermissionRequest adapter: approve, defer to the user, or block.
 
 Keep shell execution subject to the host's normal approval gate. Only an explicit
-reviewer allow resolves that gate automatically. An ask emits no decision, so
-Devin retains the pending permission request instead of rejecting the command.
+reviewer allow resolves that gate automatically. By default an ask leaves the
+native prompt pending. With --desktop-review, an ask requires Allow once in a
+desktop dialog showing the review, then resolves that same permission request.
 """
 from __future__ import annotations
 
 import contextlib
 import json
+import os
 import sys
 from typing import Any, Dict
 
@@ -50,9 +52,9 @@ def normalize_payload(payload: Any) -> Dict[str, Any]:
 
 def hook_response(result: ReviewResult) -> Dict[str, Any]:
     decision = result.review.decision
-    if decision == "allow":
-        return {"decision": "approve"}
     reason = render_reason(result.review)
+    if decision == "allow":
+        return {"decision": "approve", "reason": reason}
     if decision == "ask":
         # No `decision` means the hook did not resolve the permission request.
         # Do not emit "ask" or "block": the host should show its normal prompt.
@@ -60,6 +62,42 @@ def hook_response(result: ReviewResult) -> Dict[str, Any]:
     if decision == "deny":
         return {"decision": "block", "reason": reason}
     raise ValueError(f"Unsupported reviewer decision: {decision!r}")
+
+
+def desktop_feedback(payload: Dict[str, Any], response: Dict[str, Any]) -> None:
+    from devin_feedback import publish_feedback
+
+    arguments = payload.get("tool_input", {})
+    decision = {"approve": "allow", "block": "deny"}.get(response.get("decision"), "ask")
+    publish_feedback(arguments.get("command", "(invalid hook input)"),
+                     arguments.get("cwd") or os.getcwd(), decision, response["reason"])
+
+
+def confirm_review(command: str, cwd: str, reason: str) -> bool:
+    from command_confirmation import confirm_command
+
+    return confirm_command(command, cwd, reason, title="AI Command Review - Devin: Approval",
+                           timeout_seconds=120)
+
+
+def desktop_review(payload: Dict[str, Any], response: Dict[str, Any]) -> Dict[str, Any]:
+    if "decision" not in response:
+        arguments = payload["tool_input"]
+        approved = confirm_review(arguments["command"], arguments.get("cwd") or os.getcwd(),
+                                  response["reason"])
+        if approved is True:
+            return {"decision": "approve", "reason": "Approved once by you.\n" + response["reason"]}
+        return {"decision": "block", "reason": "Not approved: cancelled, closed, or timed out.\n"
+                + response["reason"]}
+    try:
+        desktop_feedback(payload, response)
+    except Exception as exc:
+        # Informational display errors cannot change a completed review verdict.
+        warning = f"Desktop review feedback unavailable: {type(exc).__name__}: {exc}"
+        response["reason"] += "\n" + warning
+        with contextlib.suppress(Exception):
+            sys.stderr.write(warning + "\n")
+    return response
 
 
 def emit(response: Dict[str, Any]) -> None:
@@ -73,6 +111,7 @@ def main() -> int:
         return stats_main(sys.argv[1:])
     with contextlib.suppress(Exception):
         sys.stdout.reconfigure(encoding="utf-8")
+    payload: Dict[str, Any] = {}
     try:
         payload = normalize_payload(read_hook_input())
         response = hook_response(review_payload(payload, host="devin"))
@@ -81,6 +120,12 @@ def main() -> int:
             "decision": "block",
             "reason": f"Devin command review failed closed: {type(exc).__name__}: {exc}",
         }
+    if "--desktop-review" in sys.argv[1:]:
+        try:
+            response = desktop_review(payload, response)
+        except BaseException as exc:  # noqa: BLE001
+            response = {"decision": "block", "reason": "Desktop approval failed; command blocked. "
+                        f"{type(exc).__name__}: {exc}\n" + response["reason"]}
     try:
         emit(response)
     except Exception:

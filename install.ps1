@@ -12,7 +12,9 @@ Write-Host "Installing hook scripts to $hookDir"
 New-Item -ItemType Directory -Force -Path $hookDir | Out-Null
 foreach ($f in @("review_core.py", "config.py", "providers.py",
                  "safe-command-review-hook.py", "codex-command-review-hook.py",
-                 "windsurf-command-review-hook.py", "devin-command-review-hook.py")) {
+                 "windsurf-command-review-hook.py", "devin-command-review-hook.py",
+                 "command_confirmation.py", "antigravity-command-review-hook.py",
+                 "devin_feedback.py")) {
     Copy-Item (Join-Path $src ".claude\hooks\$f") (Join-Path $hookDir $f) -Force
 }
 
@@ -60,6 +62,15 @@ $windsurfScript = $windsurfPath.Replace("'", "''")
 $windsurfCommandJson = ConvertTo-Json -Compress ("& '$windsurfPython' '$windsurfScript'; exit " + '$LASTEXITCODE')
 $devinPath = Join-Path $hookDir "devin-command-review-hook.py"
 $devinCommandJson = ConvertTo-Json -Compress ('"' + $pythonBin + '" "' + $devinPath + '"')
+
+# Antigravity runs Windows hooks through cmd /c with embedded quotes escaped as
+# \", which cmd cannot parse. The command must be unquoted, so neither path may
+# contain a space.
+$antigravityPath = Join-Path $hookDir "antigravity-command-review-hook.py"
+$antigravityCommandJson = ConvertTo-Json -Compress ($pythonBin + " " + $antigravityPath)
+if ($pythonBin.Contains(" ") -or $antigravityPath.Contains(" ")) {
+    Write-Warning "Antigravity cannot launch a hook whose Python or script path contains a space. Use paths without spaces in the Antigravity command below."
+}
 
 # Write-Output rather than Write-Host so the snippet can be piped or redirected
 # to a file; Write-Host bypasses the output stream entirely.
@@ -164,7 +175,39 @@ Using Devin Local instead? Put this in your project's .devin/hooks.v1.json
 Devin Local: allow auto-approves, ask keeps the normal prompt, deny blocks.
 Keep exec subject to approval (permissions.ask: ["exec"]). Remove the old
 windsurf-command-review-hook.py PreToolUse entry from Devin Local when migrating.
-Cascade still uses a separate allow/block gate and its own auto-run settings.
+Cascade: allow proceeds; ask opens a desktop Allow once / Cancel dialog; deny blocks.
+The dialog requires Python with Tk and an interactive desktop. If it cannot open,
+the command is blocked. Select Cascade Terminal Auto Execution = Turbo to avoid
+a second IDE approval click after the hook allows a command. First verify the
+hook and dialog load: Turbo can execute unreviewed commands if hooks are skipped.
+
+Using Google Antigravity (agy CLI, IDE, or Antigravity 2.0)? Merge this into
+$env:USERPROFILE\.gemini\config\hooks.json for all projects, or a project's
+.agents\hooks.json:
+
+  {
+    "cc-ai-review": {
+      "PreToolUse": [
+        {
+          "matcher": "^run_command`$",
+          "hooks": [
+            {
+              "type": "command",
+              "command": $antigravityCommandJson,
+              "timeout": 600
+            }
+          ]
+        }
+      ]
+    }
+  }
+
+Antigravity: use agy 1.5.3 or newer with auto_approve hook support. Keep tool
+permission at request-review (/config). Approved commands return auto_approve;
+ask opens a desktop Allow once / Cancel dialog; deny blocks. If you previously
+selected always-proceed, switch back to request-review. The 600-second timeout
+leaves time to answer the dialog; a timeout blocks. Restart agy after editing hooks.json.
+Keep the command free of quotes and spaces: Windows runs it through cmd /c.
 Keep unrelated hooks when merging. See README.md for details.
 
 Then set an API key for the provider you want:

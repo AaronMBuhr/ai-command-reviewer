@@ -13,7 +13,8 @@ echo "Installing hook scripts to $hook_dir"
 mkdir -p "$hook_dir"
 for f in review_core.py config.py providers.py \
          safe-command-review-hook.py codex-command-review-hook.py \
-         windsurf-command-review-hook.py devin-command-review-hook.py; do
+         windsurf-command-review-hook.py devin-command-review-hook.py \
+         command_confirmation.py antigravity-command-review-hook.py devin_feedback.py; do
   cp "$src/.claude/hooks/$f" "$hook_dir/$f"
 done
 
@@ -145,7 +146,39 @@ Using Devin Local instead? Put this in your project's .devin/hooks.v1.json
 Devin Local: allow auto-approves, ask keeps the normal prompt, deny blocks.
 Keep exec subject to approval (permissions.ask: ["exec"]). Remove the old
 windsurf-command-review-hook.py PreToolUse entry from Devin Local when migrating.
-Cascade still uses a separate allow/block gate and its own auto-run settings.
+Cascade: allow proceeds; ask opens a desktop Allow once / Cancel dialog; deny blocks.
+The dialog requires Python with Tk and an interactive desktop. If it cannot open,
+the command is blocked. Select Cascade Terminal Auto Execution = Turbo to avoid
+a second IDE approval click after the hook allows a command. First verify the
+hook and dialog load: Turbo can execute unreviewed commands if hooks are skipped.
+
+Using Google Antigravity (agy CLI, IDE, or Antigravity 2.0)? Merge this into
+~/.gemini/config/hooks.json for all projects, or a project's .agents/hooks.json:
+
+  {
+    "cc-ai-review": {
+      "PreToolUse": [
+        {
+          "matcher": "^run_command\$",
+          "hooks": [
+            {
+              "type": "command",
+              "command": "\\"$python_bin\\" \\"$hook_dir/antigravity-command-review-hook.py\\"",
+              "timeout": 600
+            }
+          ]
+        }
+      ]
+    }
+  }
+
+Antigravity: use agy 1.5.3 or newer with auto_approve hook support. Keep tool
+permission at request-review (/config). Approved commands return auto_approve;
+ask opens a desktop Allow once / Cancel dialog; deny blocks. If you previously
+selected always-proceed, switch back to request-review. The 600-second timeout
+leaves time to answer the dialog; a timeout blocks. Restart agy after editing hooks.json.
+On Windows the command runs through cmd /c: use install.ps1, which prints an
+unquoted command, and keep the paths free of spaces.
 Keep unrelated hooks when merging. See README.md for details.
 
 Then set an API key for the provider you want:

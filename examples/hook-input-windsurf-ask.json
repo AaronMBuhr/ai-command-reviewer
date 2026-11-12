@@ -1,0 +1,7 @@
+{
+  "agent_action_name": "pre_run_command",
+  "tool_info": {
+    "command_line": "cc_ai_review_hook_probe",
+    "cwd": "/home/dev/myproject"
+  }
+}

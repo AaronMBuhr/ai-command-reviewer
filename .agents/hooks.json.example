@@ -1,0 +1,16 @@
+{
+  "cc-ai-review": {
+    "PreToolUse": [
+      {
+        "matcher": "^run_command$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/absolute/path/to/python /absolute/path/to/cc-ai-review/antigravity-command-review-hook.py",
+            "timeout": 600
+          }
+        ]
+      }
+    ]
+  }
+}

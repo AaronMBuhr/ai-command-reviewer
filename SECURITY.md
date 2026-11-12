@@ -38,7 +38,7 @@ Specifically, it does **not** defend against:
   or the hook's own install directory.
 - **A config file that cannot be honoured fails closed.** If PyYAML is missing
   or the file is malformed, Claude Code asks with an explanation; Codex,
-  Devin Local, and Cascade block. No adapter silently reverts to defaults.
+  Devin Local, Cascade, and Antigravity block. No adapter silently reverts to defaults.
 - **Reading credentials is never auto-allowed**, and secret material combined
   with a network or interpreter channel is denied outright.
 - **One path auto-runs on AI judgment alone**: when local rules flag a command
@@ -63,7 +63,7 @@ replace the host's permission gate when a hook is skipped or never starts:
 | Reviewer hangs past the deadline | Same, enforced by a wall-clock timer | `timeout_seconds` is a per-socket-operation timeout; a server that trickles bytes resets it forever, and the host would eventually abandon the hook |
 | A provider is named but has no API key | Reviewer failure, surfaced on the next command | Silently reviewing locally while you believe an AI is reviewing is the worst of both |
 | A provider name is misspelled | Reviewer failure naming the unknown provider | Same, and the message says which name was wrong |
-| Config file is malformed, or PyYAML is missing | Claude Code asks; Codex, Devin Local, and Cascade block | Your config may be stricter than the defaults |
+| Config file is malformed, or PyYAML is missing | Claude Code asks; Codex, Devin Local, Cascade, and Antigravity block | Your config may be stricter than the defaults |
 | Hook input cannot be parsed | `deny` | A reviewer that cannot read the command cannot clear it |
 | The decision cannot be written | A block response or exit 2; Cascade retains exit 2 if stderr fails | Unusable output must not grant approval |
 
@@ -79,9 +79,34 @@ be lifted; local hard-deny findings still win.
 Devin Local uses `PermissionRequest`: an explicit `approve` resolves the
 request, while `ask` emits no decision and leaves the normal prompt in place.
 Keep shell execution subject to approval; rules or modes that bypass the
-permission request also bypass this review stage. Cascade instead uses
-`pre_run_command`: both `ask` and `deny` block, and `allow` still goes through
-Cascade's separate execution policy.
+permission request also bypass this review stage. Cascade uses `pre_run_command`:
+`ask` waits in a separate desktop dialog; only an explicit Allow once returns
+success. Cancel, closing the window, Escape, Enter, missing Tk/display, or a UI
+error block with exit `2`. A `deny` never offers an override. Approval applies
+only to that invocation; the review log still records the original `ask` verdict.
+
+Cascade's Turbo setting removes its additional approval click, but a hook that
+is skipped, cannot start, or is externally terminated may leave the command
+unreviewed. Restricted Mode disables hooks. The dialog waits for a human and
+does not approve on a timer; the reviewer timeout does not bound dialog time.
+Host timeout/cancellation behavior needs a live check for each installation.
+Other execution modes and user/team denylists may still add a native prompt.
+
+Google Antigravity uses `PreToolUse` on `run_command`. With agy 1.4.12, exit 0
+with empty stdout lets the command run. Every adapter path therefore writes a
+complete JSON decision or exits `2`. A nonzero exit, invalid JSON, an unknown
+decision, or a hook timeout blocks. Current hosts support `auto_approve`
+(use agy 1.5.3 or newer): the adapter returns it for an approved command to skip
+the default permission prompt while honoring explicit user rules. Plain `allow`
+only continues through the host policy and can still prompt. As with Cascade,
+`ask` waits in the desktop dialog and only Allow once returns `auto_approve`;
+Cancel, closing, a missing Tk/desktop or helper, or a UI error return `deny`.
+The 600-second hook timeout bounds the dialog, and a timeout blocks.
+Keep `request-review`; `always-proceed` is no longer required and also
+auto-approves workspace file edits, MCP calls and page reads, which this
+shell-only hook does not review. Older hosts may block the unknown
+`auto_approve` decision and should be upgraded. The adapter never returns
+`overwrite`, so it cannot rewrite the command.
 
 ## We attacked the auto-allow path
 
@@ -139,7 +164,7 @@ Please open a **private security advisory** through GitHub's "Report a
 vulnerability" button on the Security tab, rather than a public issue.
 
 Useful in a report: the exact command text, which host and agent (Claude Code,
-Codex, Devin Local, or Cascade),
+Codex, Devin Local, Cascade, or Antigravity),
 which provider and model, and the decision you got versus the one you expected.
 A failing case added to `tests/test_heuristics.py` is the fastest possible
 report.

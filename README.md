@@ -5,8 +5,8 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 **Have Claude, ChatGPT, or Gemini review shell commands before your AI coding
-agent runs them.** Command-review hooks for Claude Code, Codex, and
-Windsurf / Devin Desktop (Devin Local and Cascade).
+agent runs them.** Command-review hooks for Claude Code, Codex,
+Windsurf / Devin Desktop (Devin Local and Cascade), and Google Antigravity.
 
 Your agent proposes a 400-character `python -c` one-liner. You have two seconds
 to decide. You skim it, click approve, and never really know what it did. This
@@ -102,14 +102,16 @@ host's hook contract. Choose the adapter and configuration for your agent:
 | Claude Code | `PreToolUse` | Approves the tool call | Opens the permission prompt | [Claude Code setup](#claude-code-and-codex-setup) |
 | Codex | `PreToolUse` + `PermissionRequest` | Continues at PreToolUse; approves at PermissionRequest | Leaves the host's approval handling in place | [Codex details](#codex-prompt-layers) |
 | Devin Local | `PermissionRequest` | Approves the pending command automatically | Leaves the normal user prompt in place | [Devin Local setup](#devin-local-auto-approve-safe-commands-prompt-for-others) |
-| Windsurf / Devin Desktop Cascade | `pre_run_command` | Continues through Cascade's own permissions | Blocks with an explanation | [Cascade setup](#cascade-an-additional-blocking-check) |
+| Windsurf / Devin Desktop Cascade | `pre_run_command` | Proceeds automatically with Turbo enabled | Waits in a desktop Allow once / Cancel dialog | [Cascade setup](#cascade-desktop-confirmation-dialog) |
+| Google Antigravity (`agy` CLI, IDE, 2.0) | `PreToolUse` (`run_command`) | `auto_approve` skips the default permission prompt | Waits in a desktop Allow once / Cancel dialog | [Antigravity setup](#google-antigravity-setup) |
 
-All four integrations block a `deny` result. **Devin Local and Cascade are
-different agents in the same IDE.** Use Devin Local for reviewer-controlled
-auto-approval with a manual prompt for uncertain commands. Cascade's successful
-hook does not suppress its Allow button; its auto-execution setting is separate.
+All five integrations block a `deny` result. **Devin Local and Cascade are
+different agents in the same IDE.** Devin Local uses its native approval prompt.
+Cascade uses a separate desktop confirmation dialog because its hook API has no
+native `ask` response. Cascade's auto-execution setting controls whether an
+additional IDE approval click is required after the hook allows the command.
 
-The installers copy the four adapters and print their configuration. They do not
+The installers copy the five adapters and print their configuration. They do not
 modify host settings. A Cursor adapter is also included as source; the installers
 do not currently provide Cursor setup.
 
@@ -125,7 +127,9 @@ do not currently provide Cursor setup.
     safe-command-review-hook.py    # Claude Code adapter
     codex-command-review-hook.py   # Codex adapter
     windsurf-command-review-hook.py # Cascade + legacy Devin PreToolUse
+    command_confirmation.py        # desktop Allow once / Cancel dialog
     devin-command-review-hook.py    # Devin Local PermissionRequest
+    antigravity-command-review-hook.py # Google Antigravity PreToolUse
     cursor-command-review-hook.py   # additional source adapter
 .codex/
   hooks.json.example
@@ -133,6 +137,8 @@ do not currently provide Cursor setup.
   hooks.json.example              # Cascade pre_run_command
 .devin/
   hooks.v1.json.example           # Devin Local PermissionRequest
+.agents/
+  hooks.json.example              # Google Antigravity PreToolUse
 examples/
   hook-input-python-c.json
   hook-input-dangerous.json
@@ -140,15 +146,20 @@ examples/
   hook-input-codex-pretool.json
   hook-input-codex-permission-request.json
   hook-input-windsurf.json
+  hook-input-windsurf-ask.json     # harmless desktop confirmation probe
   hook-input-devin-pretool.json
   hook-input-devin-permission-request.json
+  hook-input-antigravity.json      # run_command PreToolUse sample
   mock-review-server.py           # reference endpoint for reviewer.url
 tests/
   conftest.py
   test_adapters.py                # hook response schemas, run as subprocesses
-  test_windsurf_adapter.py         # Cascade/Devin stdin and blocking exit codes
+  test_windsurf_adapter.py         # Cascade/Devin stdin and confirmation decisions
+  test_command_confirmation.py     # dialog approval, cancellation, and failures
   test_windsurf_installation.py    # installer output and launch commands
   test_devin_adapter.py           # approve / prompt / block responses
+  test_antigravity_adapter.py      # allow / dialog / deny, never empty stdout
+  test_antigravity_installation.py # printed command runs under cmd /c or sh -c
   test_config.py                  # config layering, .env trust boundary
   test_heuristics.py              # the local decision table
   test_providers.py               # per-provider request/response shapes
@@ -310,6 +321,29 @@ can change the final verdict. A reviewer error uses `policy.fail_mode` (`ask` by
 default); invalid input or configuration blocks. Review reasons remain in the log;
 whether the IDE displays an undecided response's reason depends on the host.
 
+To see explanations and approve commands in the same desktop dialog, append
+`--desktop-review` to the Devin hook command and set its hook `timeout` to **300**
+seconds. An `ask` opens **AI Command Review - Devin: Approval** with the command,
+working directory, full review, and **Allow once / Cancel** buttons. Only Allow
+once returns `approve` for that invocation, avoiding a second native prompt.
+Cancel, closing the dialog, a display failure, or the 120-second dialog timeout
+returns `block`. The 300-second host timeout allows for the reviewer's maximum
+120-second timeout, the dialog, and startup overhead.
+
+Automatic approvals still run immediately. Their explanations and blocked
+reviews appear in one separate **AI Command Review - Devin** history window
+(latest 50, newest first). It has a Close button because those decisions are
+already resolved; it does not offer an override for blocked commands. Closing
+the history is safe; the next automatic approval or block reopens it.
+
+The optional viewer requires Python's Tk support. Its history is stored in
+`%LOCALAPPDATA%/cc-ai-review/devin-feedback.jsonl` on Windows, or
+`$XDG_STATE_HOME/cc-ai-review/devin-feedback.jsonl` (default
+`~/.local/state/cc-ai-review/devin-feedback.jsonl`) elsewhere. Viewer startup
+errors go to the neighboring `devin-feedback.errors.log`. Informational history
+display failures do not change verdicts; approval-dialog failures block. Leave
+the flag off for headless use and Devin's native approval prompts.
+
 **Migrating from the old setup:** remove this project's
 `windsurf-command-review-hook.py` entry from Devin Local's `PreToolUse` hooks.
 It blocks `ask` results before they can reach the permission prompt. Keep unrelated
@@ -318,7 +352,7 @@ hooks. Do not point the new adapter at `PreToolUse`; it accepts only shell
 
 This uses the documented [Devin permission hook contract](https://docs.devin.ai/cli/extensibility/hooks/lifecycle-hooks#permissionrequest).
 
-### Cascade: an additional blocking check
+### Cascade: desktop confirmation dialog
 
 Merge `.windsurf/hooks.json.example` into `~/.codeium/windsurf/hooks.json` for all
 projects, or `.devin/hooks.json` in a workspace. Older Windsurf versions use
@@ -330,13 +364,44 @@ receives Python's blocking exit code `2`. Use a real Python interpreter rather
 than `conda run`. `show_output: true` displays diagnostics. Restricted Mode does
 not run hooks.
 
-Cascade's hook cannot implement the same approval flow: `allow` exits `0` and
-continues through Cascade's own permissions; `ask` and `deny` exit `2` and block.
-A successful hook does not automatically approve the command. If auto-execution
-is disabled, even `git diff` still requires a click. Cascade's Auto mode makes
-its own judgment; it does not turn this reviewer's `ask` into a permission prompt.
-The old Devin `PreToolUse` payload is still accepted by this adapter for backwards
-compatibility, with the same blocking behavior.
+Cascade's hook API has no native `ask` response, so the adapter supplies a
+separate desktop confirmation dialog:
+
+| Review | Behavior |
+|---|---|
+| `allow` | Returns exit `0` without opening a dialog. |
+| `ask` | Waits for **Allow once** or **Cancel**, showing the full command, working directory, and review reason. Allow once returns `0` for this invocation only. |
+| `deny` | Returns exit `2` with the reason; no approval override is offered. |
+
+Cancel, closing the dialog, Escape, and Enter reject the command with exit `2`.
+No approval is remembered. A missing Tk installation, unavailable desktop, or
+dialog failure also blocks with an explanation. Python must include `tkinter`
+and have access to the interactive desktop; SSH/headless hook processes cannot
+show this dialog. Re-run the installer when upgrading so `command_confirmation.py`
+is copied alongside the adapter. No third-party Python GUI package is required.
+
+After verifying the hook and dialog load, select **Terminal Auto Execution →
+Turbo** in Cascade's settings to avoid a second IDE approval click. In Turbo,
+safe commands proceed automatically and `ask` waits in this project's dialog.
+User/team denylist entries can still require a native approval click. Disabled,
+Allowlist, and Auto modes keep Cascade's separate approval policy in effect.
+
+**Turbo depends on the hook running.** Cascade can proceed when a hook is skipped,
+fails to launch, or exits with a code other than `2`; Restricted Mode disables
+hooks. An external host timeout or cancellation cannot be turned into a rejection
+by a process the host has stopped. Verify your installed host's behavior before
+relying on this combination. The dialog itself waits for a decision and never
+auto-approves on elapsed time. The reviewer timeout does not limit dialog time.
+The review log retains the original `ask` verdict, not the user's dialog choice.
+
+For a harmless dialog test, feed `examples/hook-input-windsurf-ask.json` to the
+adapter with `CC_AI_REVIEW__REVIEWER__PROVIDER=none`. Cancel should exit `2`;
+Allow once should exit `0`. Payload tests never execute the proposed command.
+Then check both paths in Cascade using a harmless command before relying on it.
+
+The old Devin `PreToolUse` payload remains accepted for backwards compatibility;
+its `ask` still blocks with migration instructions. For Devin Local, use the
+`PermissionRequest` adapter above to get the native IDE prompt.
 
 See [Cascade hooks](https://docs.devin.ai/desktop/cascade/hooks) and
 [auto-execution settings](https://docs.devin.ai/desktop/terminal#auto-execution-levels).
@@ -361,6 +426,108 @@ Allow click. Confirm the prompt path with a harmless, unrecognized command such
 as `cc_ai_review_hook_probe` in local-only mode; reject the prompt. Do not execute
 a destructive command as a test. Enable `policy.log_path` to verify actual
 reviews. Cascade and Devin Local require separate live UI checks.
+
+## Google Antigravity setup
+
+Antigravity (the `agy` CLI, the Antigravity IDE, and Antigravity 2.0) reads
+lifecycle hooks from `hooks.json` in a customization root. For all projects,
+merge `.agents/hooks.json.example` into `~/.gemini/config/hooks.json`. For one
+project, use the project's `.agents/hooks.json`. The installers print the entry
+with real paths. Keep unrelated named hooks when merging.
+
+```json
+{
+  "cc-ai-review": {
+    "PreToolUse": [
+      {
+        "matcher": "^run_command$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "C:\\path\\to\\python.exe C:\\Users\\you\\.claude\\hooks\\cc-ai-review\\antigravity-command-review-hook.py",
+            "timeout": 600
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Use a host that supports the `auto_approve` hook decision (`agy` 1.5.3 or newer).
+Keep **Tool permission → request-review** in `agy`'s `/config` (the default, or
+`"toolPermission": "request-review"` in `~/.gemini/antigravity-cli/settings.json`).
+Restart `agy` after registering the hook; hooks load when a session starts.
+
+**Windows: no quotes, no spaces.** Antigravity runs a hook through `cmd /c` and
+escapes embedded quotes as `\"`, which `cmd` cannot parse; a quoted interpreter
+path fails with "is not recognized as an internal or external command". Both
+the Python and script paths must therefore be free of spaces. `install.ps1`
+prints an unquoted command and warns when a path contains a space. On macOS and
+Linux the command runs through `sh -c`, and normal quoting works.
+
+The hook process starts in the directory that contains `hooks.json`, not the
+workspace. The adapter reviews against the tool's `Cwd` argument when present,
+otherwise the first entry in `workspacePaths`.
+
+| Review | Response | Behavior |
+|---|---|---|
+| `allow` | `{"decision": "auto_approve"}` | Skips the default permission prompt; explicit user rules still apply |
+| `ask` | Desktop **Allow once / Cancel** dialog, then `auto_approve` or `deny` | Shows the command, working directory and reason; only Allow once runs it |
+| `deny` | `{"decision": "deny", "reason": ...}` | Blocked, with the reason shown to the user and the agent |
+
+The [Antigravity hook contract](https://antigravity.google/docs/hooks) distinguishes
+`allow` (continue through the host's default policy) from `auto_approve` (approve
+when that policy would otherwise prompt, honoring explicit user rules). Sending
+`allow` was why even a reviewer-approved `git diff` still showed "Run this command?"
+in `request-review` mode. The adapter now sends `auto_approve` for approved commands.
+Verified with `agy` 1.5.3: `git diff --name-only -- README.md` executed with
+`request-review` and empty allow/ask/deny lists, without a permission prompt.
+
+As with Cascade, the adapter settles `ask` in its desktop dialog so each review
+requires a fresh confirmation, including when the host has cached an allow rule.
+Cancel, closing the window, Escape, Enter, a missing Tk/desktop, or a
+missing `command_confirmation.py` deny the command. Nothing is remembered between
+commands; the review log keeps the original `ask` verdict. The dialog uses the
+same `command_confirmation.py` as Cascade and needs Python with `tkinter` and an
+interactive desktop.
+
+The 600-second hook timeout leaves time to answer the dialog. If it expires,
+`agy` blocks the command. Approval in the dialog also returns `auto_approve`,
+avoiding a second default permission prompt.
+
+**Migration:** earlier instructions recommended `always-proceed` to compensate
+for the old `allow` response. It is no longer needed. Switch back to
+`request-review` to retain host review for actions this shell-only hook does not
+cover, such as file edits, MCP tool calls and page reads.
+
+The adapter never sends `overwrite`, so it cannot rewrite a command.
+
+Failure behavior observed with `agy` 1.4.12; `auto_approve` requires a current
+host (use `agy` 1.5.3 or newer). Older hosts can block an unknown decision;
+upgrade the host rather than enabling `always-proceed`. Recheck after upgrading:
+
+- `deny`, malformed JSON, an unknown decision, any nonzero exit, and a hook that
+  overruns its `timeout` all **block** the tool call. Unlike Claude Code, a slow
+  reviewer is blocked rather than skipped.
+- Exit 0 with **empty stdout runs the command**. The adapter always writes a
+  decision, and exits 2 if it cannot.
+- `deny` blocks in every permission mode, including `always-proceed` and
+  `--dangerously-skip-permissions`.
+- Explicit user permission rules still apply to `auto_approve`.
+- In `request-review` mode a hook `allow` does not skip `agy`'s prompt.
+  `permissionOverrides` only changes what an `ask` requests; it grants nothing.
+- Plain `ask` is satisfied by a matching `permissions.allow` rule, and
+  `always-proceed` auto-approves `ask` and `force_ask`. The adapter therefore
+  never returns either.
+
+To test without an agent, feed `examples/hook-input-antigravity.json` to the
+adapter with `CC_AI_REVIEW__REVIEWER__PROVIDER=none`. It should print
+`{"decision": "auto_approve"}`. Changing the `CommandLine` to `rm *` should open the
+dialog: Cancel prints `deny`, Allow once prints `auto_approve`. Payload tests never run
+the proposed command. In a live session, check that `git status` runs without a
+prompt and that deleting a nonexistent file opens the dialog. After installing globally,
+`~/.gemini/antigravity-cli/cli.log` should report `loaded 1 named hooks`.
 
 ## Test without an agent
 
@@ -696,7 +863,8 @@ Use the override deliberately. The scoped floor is the default.
 A guardrail that fails open is worse than no guardrail, because you stop reading
 commands on the strength of it. Hosts treat a hook that crashes, times out, or
 prints something unparsable as **skipped** — the command runs with no review and
-nothing tells you. The adapters handle failures as follows; the host's own
+nothing tells you (Antigravity blocks in those cases instead, but runs the
+command on empty output; see [its setup](#google-antigravity-setup)). The adapters handle failures as follows; the host's own
 permissions still matter if it cannot launch the hook or abandons it:
 
 | If this happens | The result is |
@@ -704,13 +872,15 @@ permissions still matter if it cannot launch the hook or abandons it:
 | Reviewer errors, times out, or returns junk | `policy.fail_mode` (`ask` by default) |
 | Reviewer hangs past the deadline | Same, enforced by a wall-clock timer rather than the socket timeout |
 | A provider is named but has no API key, or is misspelled | Reviewer failure naming the problem — never a silent downgrade to local-only |
-| Config file is malformed, or PyYAML is missing | Claude Code asks; Codex, Devin Local, and Cascade block |
+| Config file is malformed, or PyYAML is missing | Claude Code asks; Codex, Devin Local, Cascade, and Antigravity block |
 | Hook input cannot be parsed | `deny` — a reviewer that cannot read the command cannot clear it |
 | The decision cannot be written | JSON adapters attempt a block response or exit 2; Cascade retains exit 2 even if stderr fails |
 
 An `ask` result is translated per the [supported implementation](#supported-implementations):
 Devin Local leaves the permission request unresolved so you can decide; Cascade
-blocks it. A failed hook is not itself a substitute for the host approval gate.
+waits in a desktop confirmation dialog and blocks if it cannot show one;
+Antigravity does the same with its own dialog. A failed
+hook is not itself a substitute for the host approval gate.
 
 Running with no API key at all is different: that is the documented local-only
 mode, and it stays silent.

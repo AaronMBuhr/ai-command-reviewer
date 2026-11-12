@@ -24,6 +24,17 @@ _LEAKY_NAMES = (
 )
 
 
+@pytest.fixture
+def headless_confirmation(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Exercise the real no-GUI failure path in subprocess tests, without windows."""
+    no_gui = tmp_path / "no_gui"
+    no_gui.mkdir()
+    (no_gui / "tkinter.py").write_text(
+        "raise ImportError('No Tk in this headless test')\n", encoding="utf-8"
+    )
+    monkeypatch.setenv("PYTHONPATH", str(no_gui))
+
+
 @pytest.fixture(autouse=True)
 def isolated_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[None]:
     """Run every test with no inherited config, keys, or discoverable files.

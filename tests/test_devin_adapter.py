@@ -27,10 +27,11 @@ def payload_for(command: Any = "git diff") -> Dict[str, Any]:
 
 
 def invoke(payload: Any, extra_env: Optional[Dict[str, str]] = None,
-           raw: Optional[bytes] = None) -> Dict[str, Any]:
+           raw: Optional[bytes] = None, desktop: bool = False) -> Dict[str, Any]:
     env = {**os.environ, "CC_AI_REVIEW__REVIEWER__PROVIDER": "none"}
     env.update(extra_env or {})
-    proc = subprocess.run([sys.executable, str(ADAPTER)],
+    args = [sys.executable, str(ADAPTER)] + (["--desktop-review"] if desktop else [])
+    proc = subprocess.run(args,
                           input=raw if raw is not None else json.dumps(payload).encode("utf-8"),
                           env=env, capture_output=True, timeout=30)
     assert proc.returncode == 0, proc.stderr
@@ -54,6 +55,7 @@ def test_permission_decisions(command: str, decision: Optional[str], tmp_path: P
         assert response["reason"].strip()
     else:
         assert response["decision"] == decision
+        assert response["reason"].strip()
     entry = json.loads(log.read_text(encoding="utf-8"))
     assert entry["source"] == "local"
     assert entry["command"] == command
@@ -151,3 +153,121 @@ def test_stats_does_not_read_stdin(tmp_path: Path) -> None:
 def test_shipped_example_approves() -> None:
     raw = (REPO / "examples/hook-input-devin-permission-request.json").read_bytes()
     assert invoke(None, raw=raw)["decision"] == "approve"
+
+
+@pytest.mark.parametrize("decision,expected", [("allow", "approve"), ("ask", None),
+                                                ("deny", "block")])
+@pytest.mark.parametrize("enabled", [True, False])
+def test_desktop_review_resolves_only_explicit_approval(monkeypatch: pytest.MonkeyPatch,
+                                                       decision: str, expected: Optional[str],
+                                                       enabled: bool) -> None:
+    monkeypatch.setattr(adapter_module, "read_hook_input", lambda: payload_for("dotnet test"))
+    monkeypatch.setattr(sys, "argv", [str(ADAPTER)] + (["--desktop-review"] if enabled else []))
+    result = ReviewResult("PermissionRequest", "dotnet test", "/project", "",
+                          Review(decision, "Full review explanation", particulars=["Detail café"]))
+    monkeypatch.setattr(adapter_module, "review_payload", lambda *a, **kw: result)
+    calls = []
+    monkeypatch.setattr(adapter_module, "desktop_feedback", lambda *args: calls.append(args))
+    approvals = []
+
+    def approve(*args: Any) -> bool:
+        assert output.getvalue() == ""  # no decision is emitted before the user answers
+        approvals.append(args)
+        return True
+
+    monkeypatch.setattr(adapter_module, "confirm_review", approve)
+    output = io.StringIO()
+    monkeypatch.setattr(sys, "stdout", output)
+    assert adapter_module.main() == 0
+    response = json.loads(output.getvalue())
+    assert response.get("decision") == ("approve" if enabled and decision == "ask" else expected)
+    assert "Full review explanation" in response["reason"]
+    assert "Detail café" in response["reason"]
+    assert len(calls) == int(enabled and decision != "ask")
+    assert len(approvals) == int(enabled and decision == "ask")
+    if calls:
+        assert calls[0][1] == response
+    if approvals:
+        assert approvals[0][:2] == ("dotnet test", os.getcwd())
+        assert "Full review explanation" in approvals[0][2]
+
+
+@pytest.mark.parametrize("decision,expected", [("allow", "approve"), ("deny", "block")])
+def test_feedback_failure_cannot_grant_permission(monkeypatch: pytest.MonkeyPatch,
+                                                 decision: str, expected: Optional[str]) -> None:
+    monkeypatch.setattr(adapter_module, "read_hook_input", lambda: payload_for())
+    monkeypatch.setattr(sys, "argv", [str(ADAPTER), "--desktop-review"])
+    result = ReviewResult("PermissionRequest", "git diff", "/project", "",
+                          Review(decision, "Review"))
+    monkeypatch.setattr(adapter_module, "review_payload", lambda *a, **kw: result)
+
+    def fail(*args: Any) -> None:
+        raise OSError("Cannot start desktop viewer")
+
+    monkeypatch.setattr(adapter_module, "desktop_feedback", fail)
+    output = io.StringIO()
+    monkeypatch.setattr(sys, "stdout", output)
+    assert adapter_module.main() == 0
+    response = json.loads(output.getvalue())
+    assert response.get("decision") == expected
+    assert "Cannot start desktop viewer" in response["reason"]
+
+
+@pytest.mark.parametrize("answer,expected", [(True, "approve"), (False, "block"),
+                                            (None, "block"), ("yes", "block")])
+def test_only_explicit_allow_once_releases_ask(monkeypatch: pytest.MonkeyPatch,
+                                              answer: Any, expected: str) -> None:
+    monkeypatch.setattr(adapter_module, "confirm_review", lambda *args: answer)
+    response = adapter_module.desktop_review(adapter_module.normalize_payload(payload_for()),
+                                             {"reason": "Full review"})
+    assert response["decision"] == expected
+    assert "Full review" in response["reason"]
+
+
+@pytest.mark.parametrize("failure", [RuntimeError("No display"), KeyboardInterrupt()])
+def test_approval_dialog_failure_blocks(monkeypatch: pytest.MonkeyPatch,
+                                       failure: BaseException) -> None:
+    monkeypatch.setattr(adapter_module, "read_hook_input", lambda: payload_for("dotnet test"))
+    monkeypatch.setattr(sys, "argv", [str(ADAPTER), "--desktop-review"])
+    result = ReviewResult("PermissionRequest", "dotnet test", "/project", "",
+                          Review("ask", "Review"))
+    monkeypatch.setattr(adapter_module, "review_payload", lambda *args, **kwargs: result)
+
+    def fail(*args: Any) -> None:
+        raise failure
+
+    monkeypatch.setattr(adapter_module, "confirm_review", fail)
+    output = io.StringIO()
+    monkeypatch.setattr(sys, "stdout", output)
+    assert adapter_module.main() == 0
+    response = json.loads(output.getvalue())
+    assert response["decision"] == "block"
+    assert "Desktop approval failed" in response["reason"]
+
+
+@pytest.mark.usefixtures("headless_confirmation")
+def test_real_headless_approval_is_blocked() -> None:
+    response = invoke(payload_for("rm *"), desktop=True)
+    assert response["decision"] == "block"
+    assert "Desktop approval failed" in response["reason"]
+
+
+def test_confirmation_has_bounded_wait(monkeypatch: pytest.MonkeyPatch) -> None:
+    import command_confirmation
+
+    calls = []
+    monkeypatch.setattr(command_confirmation, "confirm_command",
+                        lambda *args, **kwargs: calls.append((args, kwargs)) or False)
+    assert adapter_module.confirm_review("dotnet build", "/project", "Review") is False
+    assert calls[0][0] == ("dotnet build", "/project", "Review")
+    assert calls[0][1]["timeout_seconds"] == 120
+
+
+def test_feedback_includes_command_and_reason(monkeypatch: pytest.MonkeyPatch) -> None:
+    import devin_feedback
+
+    calls = []
+    monkeypatch.setattr(devin_feedback, "publish_feedback", lambda *args: calls.append(args))
+    payload = adapter_module.normalize_payload(payload_for("dotnet build"))
+    adapter_module.desktop_feedback(payload, {"reason": "Builds project outputs"})
+    assert calls == [("dotnet build", os.getcwd(), "ask", "Builds project outputs")]

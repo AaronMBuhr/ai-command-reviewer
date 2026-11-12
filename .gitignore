@@ -12,6 +12,7 @@ config.yml
 
 # Live Codex wiring contains machine-specific absolute paths.
 .codex/hooks.json
+.agents/hooks.json
 
 # Internal working notes, not part of the published project.
 dev/
