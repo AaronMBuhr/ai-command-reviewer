@@ -1021,6 +1021,16 @@ The request block, as the AI writes it (field rules in the design, section 7.1):
 | `aiallow setup [--reset]` | Create or update the store; `--reset` keeps the old one as a backup (UAC). |
 | `aiallow check` | Check the store's permissions. |
 
+**From inside Claude Code:** you can also run `aiallow` with Claude Code's `!`
+prefix, which runs a command you type yourself (the hook doesn't review it).
+`!` uses Git Bash on Windows, so give full paths with forward slashes:
+
+```text
+! C:/path/to/python.exe C:/Users/<you>/.claude/hooks/cc-ai-review/aiallow.py add
+```
+
+The UAC prompt and the grant window appear as usual.
+
 **Limits, by design:**
 
 - Commands match **exactly**, character for character. A different flag, quote

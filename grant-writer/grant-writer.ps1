@@ -1113,7 +1113,9 @@ function Write-GrantsAtomically([string]$grantsPath, [byte[]]$oldBytes, [byte[]]
         $stream = [System.IO.FileStream]::new($temp, [System.IO.FileMode]::Open, [System.IO.FileAccess]::ReadWrite)
         try { $stream.Flush($true) } finally { $stream.Dispose() }
         Set-ProtectedFileSecurity $temp
-        [System.IO.File]::Replace($temp, $grantsPath, $null)
+        # NullString passes a real null ("no backup file"). A plain $null would
+        # reach .NET as "", which Replace rejects as an illegal path.
+        [System.IO.File]::Replace($temp, $grantsPath, [System.Management.Automation.Language.NullString]::Value)
     } catch {
         $reason = $_.Exception.Message
         try { if ([System.IO.File]::Exists($temp)) { [System.IO.File]::Delete($temp) } } catch { }

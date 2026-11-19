@@ -438,3 +438,19 @@ def test_add_writes_exactly_the_scope_the_dialog_showed(choice: str, tmp_path: P
         expires = eg.parse_stored_timestamp(record["expires"])
         assert ts is not None and expires is not None
         assert (expires - ts).total_seconds() == minutes * 60
+
+
+def test_atomic_write_replaces_the_file_and_leaves_no_temp(tmp_path: Path) -> None:
+    """Regression: File.Replace got "" instead of null for its backup argument
+    and failed every real write with "path is not of a legal form"."""
+    store = tmp_path / "store"
+    store.mkdir()
+    grants = store / "grants.jsonl"
+    grants.write_bytes(b"old\n")
+    proc = run_ps(REPO / "tests" / "ps" / "atomic-write-probe.ps1", "-Writer", str(WRITER),
+                  "-Target", str(grants))
+    assert proc.returncode == 0, proc.stderr
+    result = json.loads(proc.stdout.decode("utf-8"))
+    assert result == {"code": 0, "message": None}
+    assert grants.read_bytes() == b"line one\nline two\n"
+    assert sorted(p.name for p in store.iterdir()) == ["grants.jsonl"]

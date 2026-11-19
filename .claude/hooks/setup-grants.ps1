@@ -72,7 +72,8 @@ function Install-SetupUpdate([string]$folder, [string]$source) {
     $staged = $writer + '.new'
     [System.IO.File]::Copy($source, $staged, $true)
     Set-SetupFileSecurity $staged
-    [System.IO.File]::Replace($staged, $writer, $null)
+    # NullString passes a real null ("no backup"); $null would become "".
+    [System.IO.File]::Replace($staged, $writer, [System.Management.Automation.Language.NullString]::Value)
     Set-SetupFileSecurity $writer
 }
 
