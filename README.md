@@ -131,6 +131,11 @@ do not currently provide Cursor setup.
     devin-command-review-hook.py    # Devin Local PermissionRequest
     antigravity-command-review-hook.py # Google Antigravity PreToolUse
     cursor-command-review-hook.py   # additional source adapter
+    exception_grants.py            # exception grants: validation, matching, integrity
+    aiallow.py                     # exception-grant CLI (Windows)
+    setup-grants.ps1               # creates the admin-only grants store (UAC)
+grant-writer/
+  grant-writer.ps1                 # the elevated grant writer (installed by setup)
 .codex/
   hooks.json.example
 .windsurf/
@@ -961,9 +966,84 @@ command is a PowerShell `-WhatIf` dry run or every target is a cleanup artifact
 | `policy.skip_external_when_local_allows` | `false` | Skip the API call when local heuristics already say `allow`. |
 | `policy.delete_decision` | `auto` | `auto` resolves per host (deny on Codex, ask on Claude Code). Force with `ask` or `deny`. |
 | `policy.log_path` | `null` | Append one JSON line per decision, including silent allows. |
+| `exceptions.enabled` | `false` | Windows only. Check exception grants (see [Exception grants](#exception-grants-windows)). |
+| `exceptions.grants_path` | `null` | `null` = `C:\ProgramData\cc-ai-review\grants.jsonl`. Must start with a drive letter. |
 
 Corresponding environment variables are the path uppercased with doubled
 underscores, e.g. `CC_AI_REVIEW__POLICY__FAIL_MODE`.
+
+## Exception grants (Windows)
+
+Sometimes you want a command the hook blocks or questions to go ahead anyway,
+for a while. An **exception grant** allows a list of exact commands, through one
+tool name, starting in one folder or repo, for you only, until it expires or you
+revoke it. Only you can create one: it takes a UAC prompt plus a confirmation
+window that describes the grant in its own words. Design:
+`exception-grants-design.md`.
+
+**Set up once** (from your own terminal, not through the AI):
+
+```powershell
+& "$env:USERPROFILE\.claude\hooks\cc-ai-review\aiallow.cmd" setup   # UAC prompt
+```
+
+then set `exceptions.enabled: true` in your config. `setup` creates
+`C:\ProgramData\cc-ai-review`, writable only by administrators, and copies the
+grant writer there. `aiallow check` verifies the permissions at any time.
+
+**Workflow:**
+
+1. When the hook blocks a command, its message ends with a ready-made request
+   block. Ask the AI: "What permission do you need? Give it a short name."
+2. The AI explains in plain language and gives you the block with `name` and
+   `why` filled in. Copy the block.
+3. Run `aiallow add` in a **separate terminal**. Approve the UAC prompt; the
+   grant window reads the clipboard, checks the request, and shows exactly what
+   it would allow. You can change the expiry. Click **Approve** (Enter and Esc
+   both cancel).
+4. Tell the AI to retry.
+
+The request block, as the AI writes it (field rules in the design, section 7.1):
+
+```json
+{"v":1,"name":"push-feature-x","commands":["git push --force-with-lease origin feature/x"],
+ "tool":"Bash","where":"repo","cwd":"E:\\Source\\proj","hosts":null,"expires":"30m",
+ "why":"The rebase rewrote history, so a normal push is rejected."}
+```
+
+| Command | What it does |
+|---|---|
+| `aiallow add` | Approve the request on the clipboard (UAC). |
+| `aiallow list` | Your active grants and time left. |
+| `aiallow history [--since 7d]` | Grants and revokes, with use counts from the decision log. |
+| `aiallow revoke NAME` / `--all` | Revoke your grants (UAC). |
+| `aiallow edit` | Repair a broken grants file in a built-in editor, shown as a line diff (UAC). |
+| `aiallow setup [--reset]` | Create or update the store; `--reset` keeps the old one as a backup (UAC). |
+| `aiallow check` | Check the store's permissions. |
+
+**Limits, by design:**
+
+- Commands match **exactly**, character for character. A different flag, quote
+  or space is a different command.
+- `where` limits only the **starting folder**, not which files the command
+  touches. Exact text doesn't pin down what a command does: a script it runs can
+  still change.
+- **UAC must be on** (not "Never notify"), and the AI tool must not run
+  elevated: grants are ignored for an elevated AI process.
+- Hosts that report the tool as `shell` (Codex, Windsurf, Devin, Antigravity)
+  can't tell Bash from PowerShell, so such a grant covers either.
+- While grants are enabled, the hook denies any AI command that mentions
+  `aiallow`, the grant writer, the setup script or the grants folder.
+- A custom `grants_path` is an advanced option: `aiallow setup` refuses it, and
+  an administrator must create the folder, an empty `grants.jsonl` and a copy of
+  `grant-writer.ps1` there with the same permissions as the default store
+  (owner Administrators, protected, full control for Administrators and SYSTEM,
+  read-and-execute for Users). Then run `aiallow check`.
+
+**Troubleshooting:** `aiallow check` names the exact file or parent folder and
+the right that fails the check. Don't loosen a parent folder's permissions to
+make it pass; move the store instead. If the grants file is invalid, no grant
+applies until you fix it with `aiallow edit`.
 
 ## Recommended starting point
 
