@@ -791,7 +791,8 @@ def _read_sid(data: bytes, offset: int, limit: int) -> str:
     if offset + 8 > limit:
         raise _Malformed("SID header out of range")
     revision, count = data[offset], data[offset + 1]
-    if revision != 1 or not 1 <= count <= 15:
+    # Windows allows 0..15 sub-authorities in a SID structure (S-1-5 is valid).
+    if revision != 1 or count > 15:
         raise _Malformed("bad SID revision or sub-authority count")
     end = offset + 8 + 4 * count
     if end > limit:

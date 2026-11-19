@@ -155,7 +155,9 @@ def main() -> None:
     add("ace-count-too-high", "file", False, "malformed",
         data=patch(good, dacl_offset(good) + 4, "<H", 50))
     sid_start = first_ace + 8
-    add("sid-zero-subauthorities", "file", False, "malformed",
+    # Zero sub-authorities is a valid SID structure (S-1-5), so the first entry
+    # becomes "S-1-5 has full control": a write-right problem, not malformed.
+    add("sid-zero-subauthorities", "file", False, "write-right",
         data=patch(good, sid_start + 1, "<B", 0))
     add("sid-sixteen-subauthorities", "file", False, "malformed",
         data=patch(good, sid_start + 1, "<B", 16))

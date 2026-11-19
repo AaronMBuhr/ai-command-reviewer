@@ -1451,5 +1451,150 @@
   "code": "json-syntax",
   "field": null,
   "line": 2
+ },
+ {
+  "id": "conv-dir",
+  "kind": "conversion",
+  "path": "requests/conv-dir.json",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "record": {
+   "v": 1,
+   "type": "grant",
+   "name": "push-x",
+   "user": "S-1-5-21-1-2-3-1001",
+   "commands": [
+    "git push"
+   ],
+   "tool": "Bash",
+   "where": "dir",
+   "path": "{TMP}",
+   "hosts": null,
+   "expires": "2026-11-19T18:30:00Z",
+   "why": "Needed for the build."
+  },
+  "description": "descriptions/conv-dir.txt"
+ },
+ {
+  "id": "conv-repo-sub",
+  "kind": "conversion",
+  "path": "requests/conv-repo-sub.json",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "record": {
+   "v": 1,
+   "type": "grant",
+   "name": "push-x",
+   "user": "S-1-5-21-1-2-3-1001",
+   "commands": [
+    "git push"
+   ],
+   "tool": "Bash",
+   "where": "repo",
+   "path": "{TMP_REPO}",
+   "hosts": [
+    "claude",
+    "codex"
+   ],
+   "expires": "2026-11-19T20:00:00Z",
+   "why": ""
+  },
+  "description": "descriptions/conv-repo-sub.txt"
+ },
+ {
+  "id": "conv-any-never",
+  "kind": "conversion",
+  "path": "requests/conv-any-never.json",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "record": {
+   "v": 1,
+   "type": "grant",
+   "name": "push-x",
+   "user": "S-1-5-21-1-2-3-1001",
+   "commands": [
+    "git push --force",
+    " echo\tx \u200b"
+   ],
+   "tool": "shell",
+   "where": "any",
+   "path": null,
+   "hosts": [
+    "codex"
+   ],
+   "expires": null,
+   "why": ""
+  },
+  "description": "descriptions/conv-any-never.txt"
+ },
+ {
+  "id": "conv-iso-offset",
+  "kind": "conversion",
+  "path": "requests/conv-iso-offset.json",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "record": {
+   "v": 1,
+   "type": "grant",
+   "name": "push-x",
+   "user": "S-1-5-21-1-2-3-1001",
+   "commands": [
+    "git push"
+   ],
+   "tool": "Bash",
+   "where": "dir",
+   "path": "{TMP}",
+   "hosts": null,
+   "expires": "2026-11-20T08:00:00Z",
+   "why": ""
+  }
+ },
+ {
+  "id": "conv-one-day-no-tool",
+  "kind": "conversion",
+  "path": "requests/conv-one-day-no-tool.json",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "record": {
+   "v": 1,
+   "type": "grant",
+   "name": "push-x",
+   "user": "S-1-5-21-1-2-3-1001",
+   "commands": [
+    "git push"
+   ],
+   "tool": "",
+   "where": "dir",
+   "path": "{TMP}",
+   "hosts": null,
+   "expires": "2026-11-20T18:00:00Z",
+   "why": ""
+  },
+  "description": "descriptions/conv-one-day-no-tool.txt"
+ },
+ {
+  "id": "conv-repo-without-git",
+  "kind": "conversion",
+  "path": "requests/conv-repo-without-git.json",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "where"
+ },
+ {
+  "id": "conv-dir-missing",
+  "kind": "conversion",
+  "path": "requests/conv-dir-missing.json",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "cwd"
  }
 ]

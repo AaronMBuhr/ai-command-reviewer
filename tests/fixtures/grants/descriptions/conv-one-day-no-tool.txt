@@ -1,0 +1,12 @@
+Allow these exact commands (the host sends no tool name):
+
+    git push
+
+Starting in: exactly the folder {TMP}
+For user: {USER} (S-1-5-21-1-2-3-1001)
+On AI hosts: all
+Until: {LOCAL} local time (1 day)
+Name: push-x
+
+--- AI's stated reason (not checked) ---
+(none given)

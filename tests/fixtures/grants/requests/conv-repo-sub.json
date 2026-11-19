@@ -1,0 +1,1 @@
+{"v":1,"name":"push-x","commands":["git push"],"tool":"Bash","where":"repo","cwd":"{TMP_REPO}\\sub","hosts":["claude","codex"],"expires":"2h","why":""}

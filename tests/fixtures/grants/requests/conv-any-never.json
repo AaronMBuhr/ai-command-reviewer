@@ -1,0 +1,1 @@
+{"v":1,"name":"push-x","commands":["git push --force"," echo\tx \u200b"],"tool":"shell","where":"any","hosts":["codex"],"expires":"never","why":""}
