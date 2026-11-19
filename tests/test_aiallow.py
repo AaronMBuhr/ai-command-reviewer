@@ -107,7 +107,9 @@ def test_setup_skips_the_pre_uac_check_and_launches_setup(
 ) -> None:
     env["cfg"].write_text("exceptions:\n  enabled: true\n", encoding="utf-8")
     env["problems"] = ["Exception grants are not set up. Run: aiallow setup"]
-    assert aiallow.main(["setup", "--reset"]) == 0
+    # The stubbed check keeps reporting "not set up", so the final check fails
+    # (CODE-004). What matters here is that setup still launched.
+    assert aiallow.main(["setup", "--reset"]) == 30
     [(script, args)] = env["recorder"].calls
     assert script.endswith("setup-grants.ps1")
     assert args[0] == "-SourceWriter" and args[1].endswith("grant-writer.ps1")
@@ -200,3 +202,23 @@ def test_unsupported_platform(monkeypatch: pytest.MonkeyPatch,
     monkeypatch.setattr(sys, "platform", "linux")
     assert aiallow.main(["list"]) == 30
     assert "Windows-only" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("child, problems, expected, message", [
+    (0, [], 0, "Setup complete."),
+    (0, ["post-setup integrity failure"], 30, "failed the check above"),
+    (40, [], 40, aiallow.EXIT_MESSAGES[40]),
+    (11, ["not set up"], 11, aiallow.EXIT_MESSAGES[11]),
+])
+def test_setup_result_includes_the_final_check(
+    child: int, problems: List[str], expected: int, message: str,
+    env: Dict[str, Any], capsys: pytest.CaptureFixture
+) -> None:
+    env["cfg"].write_text("exceptions:\n  enabled: true\n", encoding="utf-8")
+    env["recorder"].code = child
+    env["problems"] = problems
+    assert aiallow.main(["setup"]) == expected
+    out = capsys.readouterr().out
+    assert message in out
+    if expected != 0:
+        assert "Setup complete." not in out

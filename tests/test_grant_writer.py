@@ -412,3 +412,29 @@ def test_plan_only_touches_no_lock_library_or_folder(tmp_path: Path) -> None:
     finally:
         kernel32.CloseHandle(handle)
     assert result == {"action": "update", "backup_name": None}
+
+
+# ------------------------------------------------------------- approved scope (CODE-003)
+
+@pytest.mark.parametrize("choice", ["30m", "2h", "never"])
+def test_add_writes_exactly_the_scope_the_dialog_showed(choice: str, tmp_path: Path) -> None:
+    proc = run_ps(REPO / "tests" / "ps" / "add-scope-probe.ps1", "-Writer", str(WRITER),
+                  "-Cwd", str(tmp_path), "-Choice", choice)
+    assert proc.returncode == 0, proc.stderr
+    result = json.loads(proc.stdout.decode("utf-8"))
+    assert result["code"] == 0
+    # The root is resolved once, however the expiry changes.
+    assert result["root_calls"] == 1
+    record = json.loads(result["written"].splitlines()[-1])
+    assert eg.validate_record(record) is None
+    assert record["path"] == r"C:\root-1"
+    assert r"any folder of the git repo at C:\root-1" in result["shown"]
+    if choice == "never":
+        assert record["expires"] is None
+        assert "Until revoked" in result["shown"]
+    else:
+        minutes = {"30m": 30, "2h": 120}[choice]
+        ts = eg.parse_stored_timestamp(record["ts"])
+        expires = eg.parse_stored_timestamp(record["expires"])
+        assert ts is not None and expires is not None
+        assert (expires - ts).total_seconds() == minutes * 60

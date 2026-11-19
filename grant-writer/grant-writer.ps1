@@ -966,24 +966,9 @@ function ConvertTo-Grant($request, [string]$forUser, [DateTime]$now, $records, [
     }
     $expires = [string]$request['expires']
     if ($expiresOverride) { $expires = $expiresOverride }
-    $expiresValue = $null
-    if ($expires -cne 'never') {
-        $m = [Rules]::DurationRe.Match($expires)
-        try {
-            if ($m.Success) {
-                $count = [int]$m.Groups[1].Value
-                $unit = $m.Groups[2].Value
-                if ($unit -ceq 'm') { $moment = $now.AddMinutes($count) }
-                elseif ($unit -ceq 'h') { $moment = $now.AddHours($count) }
-                else { $moment = $now.AddDays($count) }
-            } else {
-                $moment = [DateTime]::new([Rules]::TimestampTicks($expires, $false), [DateTimeKind]::Utc)
-            }
-        } catch {
-            $result['Error'] = [VError]::new('bad-value', 'expires'); return ,$result
-        }
-        $expiresValue = Format-StoredTime $moment
-    }
+    $resolved = Resolve-Expiry $expires $now
+    if ($null -ne $resolved['Error']) { $result['Error'] = $resolved['Error']; return ,$result }
+    $expiresValue = $resolved['Value']
     $record = New-Ordered
     $record['v'] = [JsonNumber]::new('1', $true)
     $record['type'] = 'grant'
@@ -1001,6 +986,56 @@ function ConvertTo-Grant($request, [string]$forUser, [DateTime]$now, $records, [
     $record['why'] = $request['why']
     $result['Record'] = $record
     return ,$result
+}
+
+# An expiry choice ("30m", "never", or an ISO time) as the stored UTC string,
+# or $null for never. Returns an ordinal OrderedDictionary with Error and Value.
+function Resolve-Expiry([string]$expires, [DateTime]$now) {
+    $result = New-Ordered
+    $result['Error'] = $null
+    $result['Value'] = $null
+    if ($expires -ceq 'never') { return ,$result }
+    $m = [Rules]::DurationRe.Match($expires)
+    try {
+        if ($m.Success) {
+            $count = [int]$m.Groups[1].Value
+            $unit = $m.Groups[2].Value
+            if ($unit -ceq 'm') { $moment = $now.AddMinutes($count) }
+            elseif ($unit -ceq 'h') { $moment = $now.AddHours($count) }
+            else { $moment = $now.AddDays($count) }
+        } else {
+            $ticks = [Rules]::TimestampTicks($expires, $false)
+            if ($ticks -lt 0) { throw [System.ArgumentException]::new('bad expiry') }
+            $moment = [DateTime]::new($ticks, [DateTimeKind]::Utc)
+        }
+    } catch {
+        $result['Error'] = [VError]::new('bad-value', 'expires')
+        return ,$result
+    }
+    $result['Value'] = Format-StoredTime $moment
+    return ,$result
+}
+
+# A copy of an already-converted grant with only its expiry changed (review
+# CODE-003). The folder scope, ID and timestamp are kept exactly as shown, and
+# the filesystem is not consulted again. Returns Error and Record.
+function Set-GrantExpiry($record, [string]$choice) {
+    $result = New-Ordered
+    $result['Error'] = $null
+    $result['Record'] = $null
+    $now = [DateTime]::new([Rules]::TimestampTicks([string]$record['ts'], $true), [DateTimeKind]::Utc)
+    $resolved = Resolve-Expiry $choice $now
+    if ($null -ne $resolved['Error']) { $result['Error'] = $resolved['Error']; return ,$result }
+    $copy = New-Ordered
+    foreach ($key in $record.Keys) { $copy[$key] = $record[$key] }
+    $copy['expires'] = $resolved['Value']
+    $result['Record'] = $copy
+    return ,$result
+}
+
+# The clipboard text, in a function of its own so tests can supply it.
+function Get-ClipboardRequestText {
+    return [System.Windows.Forms.Clipboard]::GetText()
 }
 
 function Format-Span([long]$minutes) {
@@ -1133,10 +1168,11 @@ function ConvertTo-DialogText([string]$text) {
     return $text.Replace([string][char]0x0A, [string][char]0x0D + [char]0x0A)
 }
 
-# The add dialog's text for another expiry choice. $context holds the request,
-# user, time and existing records (see Invoke-Add).
+# The add dialog's text for another expiry choice. $context['candidate'] is the
+# grant converted once when the dialog opened (see Invoke-Add); only its expiry
+# changes here.
 function Get-ExpiryDescription($context, [string]$choice) {
-    $again = ConvertTo-Grant $context['request'] $context['user'] $context['now'] $context['records'] $choice
+    $again = Set-GrantExpiry $context['candidate'] $choice
     if ($null -ne $again['Error']) { return 'Invalid expiry: ' + $again['Error'].Describe() }
     return (Get-Description $again['Record'])
 }
@@ -1290,7 +1326,7 @@ function Invoke-Add([string]$grantsPath) {
     if ($null -ne $file.Error) {
         return (Show-Result 21 ('The grants file is invalid (' + $file.Error.Describe() + "). Fix it with: aiallow edit"))
     }
-    $text = [System.Windows.Forms.Clipboard]::GetText()
+    $text = Get-ClipboardRequestText
     if (-not $text) { return (Show-Result 20 'The clipboard is empty. Copy the request block first.') }
     $now = Get-UtcNow $null
     $request = $null
@@ -1303,25 +1339,26 @@ function Invoke-Add([string]$grantsPath) {
             return (Show-Result 20 ("You already have an active grant named '" + $request['name'] + "'. Revoke it first, or use another name."))
         }
     }
+    # Convert exactly once: this candidate (folder scope, repo root, ID, time) is
+    # what the dialog shows and what gets written. Expiry changes only replace
+    # its expiry; the filesystem is never consulted again (review CODE-003).
     $converted = ConvertTo-Grant $request $ForUser $now $file.Records $null
     if ($null -ne $converted['Error']) {
         return (Show-Result 20 ('The request can''t be granted: ' + $converted['Error'].Describe()))
     }
+    $candidate = $converted['Record']
     $choices = [System.Collections.Generic.List[string]]::new()
     foreach ($c in @([string]$request['expires'], '15m', '30m', '1h', '2h', '8h', '1d', '7d', 'never')) {
         if (-not $choices.Contains($c)) { $choices.Add($c) }
     }
     $context = New-Ordered
-    $context['request'] = $request
-    $context['user'] = $ForUser
-    $context['now'] = $now
-    $context['records'] = $file.Records
+    $context['candidate'] = $candidate
     $context['choices'] = $choices
     $context['initial'] = [string]$request['expires']
     $header = 'Grants file: ' + $grantsPath + '   User: ' + $ForUser
-    $chosen = Show-Confirm 'aiallow: approve an exception grant' $header (Get-Description $converted['Record']) $context
+    $chosen = Show-Confirm 'aiallow: approve an exception grant' $header (Get-Description $candidate) $context
     if ($null -eq $chosen) { return (Show-Result 10 'Cancelled. Nothing was changed.') }
-    $final = ConvertTo-Grant $request $ForUser $now $file.Records $chosen
+    $final = Set-GrantExpiry $candidate $chosen
     if ($null -ne $final['Error']) { return (Show-Result 20 ('Invalid expiry: ' + $final['Error'].Describe())) }
     $line = [JsonOut]::Canonical($final['Record']) + [char]0x0A
     $newBytes = [byte[]]($state['bytes'] + [System.Text.UTF8Encoding]::new($false).GetBytes($line))

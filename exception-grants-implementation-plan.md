@@ -1647,4 +1647,6 @@ Where the build departed from or refined this plan, so a reviewer can check each
 | Extra writer action | `validate-roundtrip` (read-only) for the JSON array-shape checkpoint. | Section 14. |
 | Generators | `tests/fixtures/grants/make_fixtures.py` regenerates the grant fixtures; description goldens are reviewed writer output. | Fixtures stay reproducible. |
 | `aiallow` quoting | Values are quoted; parameter names stay bare; a value ending in `\` is refused. | A trailing backslash would escape the closing quote. |
+| Approved scope (review CODE-003) | `add` converts the request once. The dialog shows that candidate, an expiry change only replaces its `expires` (same scope, ID and time), and the approved candidate is what gets written. The repo root is never looked up again. Test: `tests/ps/add-scope-probe.ps1`. | Re-converting after Approve could pick a different repo root than the one shown. |
+| Setup result (review CODE-004) | `aiallow setup` returns the elevated step's code if it failed, otherwise the final check's code; "Setup complete." only when both pass. | A failing final check used to exit 0. |
 | Not done | Manual release checks (design section 11, plan 10.3) and the `! aiallow` test in Claude Code. | They need a real UAC prompt and a disposable machine. |

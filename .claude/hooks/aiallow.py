@@ -233,10 +233,22 @@ def cmd_setup(settings: config.ExceptionSettings, reset: bool) -> int:
     args = ["-SourceWriter", str(source_writer_path()), "-ProgramData", program_data]
     if reset:
         args.append("-Reset")
-    code = report(run_elevated(str(HERE / "setup-grants.ps1"), args))
-    say()
-    cmd_check(settings)
-    return code
+    code = run_elevated(str(HERE / "setup-grants.ps1"), args)
+    if code != 0:
+        # The elevated step failed: its code wins. The check still runs, so the
+        # user sees the store's current state.
+        report(code)
+        say()
+        cmd_check(settings)
+        return code
+    # Setup only counts as done when the unelevated check also passes
+    # (review CODE-004).
+    check_code = cmd_check(settings)
+    if check_code == 0:
+        say("Setup complete.")
+    else:
+        say("Setup ran, but the store failed the check above.")
+    return check_code
 
 
 def cmd_check(settings: config.ExceptionSettings) -> int:

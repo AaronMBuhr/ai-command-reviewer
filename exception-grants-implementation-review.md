@@ -1,102 +1,122 @@
-# Exception Grants: Implementation Review
+# Exception Grants: Implementation Review — Second Pass
 
 Reviewed: 2026-11-19
 
-**Verdict: Approved with notes for the implementation so far (phases 1–4).**
+**Verdict: Revision required.** One Major and one Minor finding remain in the implementation now covering phases 1–8. The two findings from the first pass are resolved. Automated checks pass, but the new approval-scope defect must be corrected, and the planned manual release checks remain outstanding.
 
-No Blocker or Major finding was identified in the implemented runtime path. Two Minor findings remain. This is not approval of the complete feature: the privileged writer, setup, CLI, and release checks are not implemented yet.
+## Scope and snapshot
 
-## Scope and evidence
+Reviewed commit `ba2b515a32d8e57cd11efce966f0c21f8d740241`. The working tree was clean at the start. This review updates only this document.
 
-Reviewed the working-tree changes against design revision 4 and implementation-plan revision 3, including its implementation-time decisions D21–D24:
+The review covers the Python grant reader and hook integration, the new PowerShell writer and setup script, the `aiallow` CLI, installation and documentation changes, and their tests. The primary new focus was phases 5–8: request conversion and confirmation, write and repair paths, mutex use, setup/reset, launch arguments, and cross-language validation.
 
-- Configuration defaults, coercion, Windows known-folder lookup, and custom-path validation.
-- Strict request and whole-file validation, revocation, expiry, exact matching, scope matching, and help text in `exception_grants.py`.
-- Raw security-descriptor parsing, protected-object and ancestor checks, Windows identity helpers, and bounded grant-file lookup.
-- Hook integration, protected-store denial, shared finalization and logging, and adapter output tests.
-- Both installers, their module-copy coverage, new fixtures and tests, and changes to existing tests.
-
-There is no `.ai-workflow/workflow.md`. This is a standalone review under the user's request; no workflow state or implementation files were changed.
-
-Snapshot SHA-256 values:
+Authoritative documents:
 
 | Artifact | SHA-256 |
 |---|---|
-| `exception-grants-design.md` | `C5C3298183B5310673A6EC25F531BC8500E756DE33C6B8485520DC8F27E5CB53` |
-| `exception-grants-implementation-plan.md` | `7940010A35ED329DB43457554AA4C9B72E8990908363D7179258CD84C036EABF` |
-| `.claude/hooks/exception_grants.py` | `A8304A2ACC92CC77DF927F49A06BAB87AF578965FF32F82F021CC0F1F2B1730C` |
-| `.claude/hooks/review_core.py` | `2E8A797CB15732739307FC9CC930E989D1DE87E0D3931924080C75397C2DE584` |
+| `exception-grants-design.md`, revision 4 | `C5C3298183B5310673A6EC25F531BC8500E756DE33C6B8485520DC8F27E5CB53` |
+| `exception-grants-implementation-plan.md`, revision 3 with implementation notes | `C05407A10E9CB33801E3BE770FA8141C9C54B21428DC2D995F6233EC6C45D7A0` |
 
-## CODE-001: Assert that the external reviewer was never called
+This remains a standalone review. There is no workflow state file, and no implementation or plan files were changed.
 
-Severity: Minor. Confidence: High.
+## Previous findings
 
-Location: `tests/test_grant_review.py:30` (`no_network`) and `:70` (`test_matching_grant_allows_and_skips_the_external_reviewer`); `.claude/hooks/review_core.py:1696`.
+| ID | Disposition | Evidence |
+|---|---|---|
+| CODE-001: reviewer-skip test could swallow its own failure | Resolved | `tests/test_grant_review.py:80` now records calls to `_external_review_with_deadline` and asserts the list is empty after review returns. The suite passes with this assertion. |
+| CODE-002: ACL fixture generator used a Python 3.10-only argument | Resolved by inspection | `tests/fixtures/acl/make_fixtures.py:172` now writes encoded bytes, preserving LF without `write_text(newline=...)`. Python 3.9 execution was not repeated locally. |
 
-**Expected:** The phase-4 regression test must fail if a matching grant causes an external review, even if the final decision is still a grant allow.
+## CODE-003: Save the scope the user actually approved
 
-**Observed:** The test patches `providers.post_json` to raise `AssertionError`, but the normal reviewer path catches `Exception` and converts it into an external-review error. The test asserts the final allow and log fields without asserting that the reviewer call count is zero.
+Severity: **Major**. Confidence: High.
 
-**Evidence:** In a separate Python process, I wrapped `review_payload` to call `_reviewed_decision` once before calling the original implementation. The existing test still passed (exit 0), and the wrapper recorded one extra reviewer path. This probe changed only in-memory function bindings; no source file was edited or live provider contacted.
+Location: `grant-writer/grant-writer.ps1:949` (`ConvertTo-Grant`), `:1138` (`Get-ExpiryDescription`), and `:1322–1325` (`Invoke-Add`).
 
-**Consequence:** A future regression that contacts the reviewer before honoring a grant could pass this test. The current production branch correctly skips the external reviewer; this finding concerns the regression test's ability to enforce that behavior.
+**Expected:** Design section 1 requires that what the user approves is what gets allowed. Section 6 requires the resolved repository root to be shown in the confirmation.
 
-**Recommended change:** Patch `_external_review_with_deadline` with a counting mock and assert `assert_not_called()` after the review. Keep the outbound-network guard as an additional safeguard. An explicit call assertion cannot be swallowed by the production error handler because it runs after the handler returns.
+**Observed:** The initial conversion resolves the repository root and builds the record used for the confirmation. Changing the expiry also performs a fresh conversion. After Approve, `Invoke-Add` calls `ConvertTo-Grant` yet again and writes that new record. Each conversion independently calls `Get-RepoRoot`; the dialog returns only an expiry string, not the record it displayed.
 
-## CODE-002: Keep the ACL fixture generator compatible with Python 3.9
+The grant mutex serializes grant operations, but it does not prevent an ordinary repository operation from adding or removing a `.git` marker while the dialog is open. For example, if a nested repository marker is removed and a parent repository remains, the final conversion selects the parent. The stored grant then covers more starting folders than the user approved.
 
-Severity: Minor. Confidence: High.
+**Evidence:** A read-only Windows PowerShell 5.1 probe loaded the writer with `-LibraryOnly`, built a valid repository-scoped request, and replaced only `Get-RepoRoot` in memory to simulate the filesystem result changing between the same two conversions used by `Invoke-Add`. It produced:
 
-Location: `tests/fixtures/acl/make_fixtures.py:168`.
+```text
+Displayed path: E:\Source\Mine\Claude-code-ai-validate-pretool
+Final path: E:\Source\Mine
+Final validation error:
+```
 
-**Expected:** The plan's Python 3.9 compatibility rule should cover the fixture-generation utility, or the utility should explicitly declare a different minimum version.
+The second record passed stored-record validation. The probe performed no grant write, repository modification, elevation, or dialog interaction. The source establishes that the second conversion is the record sent to the write function.
 
-**Observed:** The generator calls `Path.write_text(..., newline="\n")`. The `newline` argument was added in Python 3.10. See the [official Python pathlib documentation](https://docs.python.org/3.10/library/pathlib.html#pathlib.Path.write_text).
+**Consequence:** A valid grant can authorize a broader repository scope than the last confirmation displayed. This is a confirmation-integrity defect even under the accepted guardrail threat model; it does not require a hostile agent.
 
-**Consequence:** Regenerating the shared ACL fixtures on Windows with Python 3.9 fails with `TypeError` at the output step. The ordinary test suite reads committed fixtures and does not execute this generator, so its Python 3.9 job would not catch this. Installed hook behavior is unaffected.
+**Recommended change:** Resolve the scope once, retain the candidate record associated with the displayed description, and return that candidate on approval. Expiry changes should update the expiry on the retained scope and regenerate the description from that candidate. Persist the approved record. If a filesystem recheck is necessary, reject or request renewed confirmation when it changes the scope; never silently substitute a new root.
 
-**Recommended change:** Serialize to UTF-8 and use `write_bytes`, or use `with out.open("w", encoding="utf-8", newline="\n")` and write through that handle. Both preserve the required LF bytes without a Python 3.10-only `write_text` argument. Verify generation under Python 3.9 in a temporary destination and compare the generated bytes with the checked-in fixture.
+**Verification required:** Add a regression test with changing repository-root results across the confirmation boundary. Assert that the persisted path equals the last displayed path, or that the operation stops and asks for renewed confirmation. Cover both the initial expiry and a changed expiry. This can use stubbed UI and write functions without elevating or changing a real store.
 
-## What is working
+## CODE-004: Propagate failure of setup's final check
 
-- Invalid records invalidate the entire file, rather than silently discarding a revoke. Reads are bounded before parsing.
-- Matching uses the original command string and requires the user SID, tool, host, and location conditions. Revokes affect earlier grants for the relevant user; expiry is exclusive.
-- Security parsing checks SID boundaries inside ACEs and ACE boundaries inside ACLs. The test fixtures cover unsupported ACEs, NULL DACLs, ownership, write rights, inheritance, and malformed nested sizes.
-- Grant failures return to normal review. Store-access denial runs before matching. Grant allows retain the grant ID and use the shared decision log.
-- Help blocks survive the particulars limit. All six host-adapter round trips pass with the integrity check explicitly mocked.
-- Both installers include the new imported module. A test runs a copied installation independently of the checkout's module directory.
-- The existing incomplete-install tests retain their intended missing-component condition; adding `exception_grants.py` to their copied prerequisites does not weaken that condition.
+Severity: **Minor**. Confidence: High.
 
-## Verification
+Location: `.claude/hooks/aiallow.py:223–239` (`cmd_setup`).
 
-Executed on Windows using `C:\Users\aaron\anaconda3\envs\mypython312\python.exe`:
+**Expected:** Setup's final unelevated verification is part of establishing that the store is usable. If it fails after the elevated child reports success, the overall command should return a failure status.
+
+**Observed:** `cmd_setup` calls `cmd_check(settings)`, discards its result, and returns the elevated child's code. With a successful child and a failing reader check, the command prints “Done.” followed by “Not protected” and exits 0.
+
+**Evidence:** A Python probe mocked `run_elevated` to return 0 and `check_store` to report a post-setup integrity failure. Calling the real `cmd_setup` printed:
+
+```text
+Done.
+
+Not protected: C:\ProgramData\cc-ai-review\grants.jsonl
+  - post-setup integrity failure
+cmd_setup exit: 0
+```
+
+No process was launched and no store was modified.
+
+**Consequence:** A caller or automation sees success even though the required final check reports failure. The hook itself still fails safe; this is an outcome-reporting defect.
+
+**Recommended change:** Preserve a nonzero child exit code. When the child succeeds, return the final check's code. Avoid the unqualified completion message until both stages succeed. Add tests for child success/check failure, both succeeding, and child failure.
+
+## Verification performed
+
+Commands run from the repository on Windows:
 
 ```powershell
-& 'C:\Users\aaron\anaconda3\envs\mypython312\python.exe' -B -m pytest -q -p no:cacheprovider
+& 'C:\Users\aaron\anaconda3\envs\mypython312\python.exe' -B -m pytest -q -o addopts='' -p no:cacheprovider
 & 'C:\Users\aaron\anaconda3\envs\mypython312\python.exe' -B -m ruff check . --no-cache
 git diff --check
 ```
 
-- Full suite: exit 0, 780 passing tests, with no skips shown. A separate collection check confirmed 780 tests.
+Results:
+
+- **844 tests passed in 94.57 seconds**, with no skips reported.
 - Ruff: all checks passed.
-- Tracked diff whitespace check: passed; Git emitted existing safe-directory and line-ending warnings. This command does not validate untracked files.
-- Focused in-memory regression-sensitivity probe: the reviewer-skip test passed despite an inserted reviewer path, confirming CODE-001.
+- Diff whitespace check: passed on the clean implementation snapshot.
+- Read-only probes confirmed CODE-003 and CODE-004 as described above.
 
-No elevation, grants-store writes, ACL changes, installation, or fixture regeneration was performed.
+The suite exercises Python/PowerShell request and file fixtures, ACL parity fixtures, conversion and description goldens, diff boundaries, rejection of a user-owned store, mutex contention, library-only loading, the no-cmdlet AST check, setup planning, mocked CLI launches, all six adapter grant round trips, and existing hook behavior.
 
-## Scope not verified
+The previous shared-module installer fix remains present. Setup planning is dispatched before its library import, and the actual writer's library-only mode returns before action dispatch. The setup and writer both use the same named mutex. These are positive results, but they do not substitute for successful privileged operation tests.
 
-- Python 3.9, 3.11, and 3.13 execution and Ubuntu CI were not rerun locally. The Windows Python 3.12 run does not establish the entire CI matrix. CODE-002 is supported by source inspection and the documented API version, not a local Python 3.9 execution.
-- A successful lookup against a genuinely protected, provisioned grants store was not exercised. Adapter success tests deliberately mock the integrity check; real Windows tests cover security reads, identity, junction detection, and rejection of user-owned stores.
-- PowerShell/Python parity, privileged confirmation, atomic writes, mutex handling, setup/reset, the CLI, and end-to-end grant creation remain future-phase work. Their absence is expected for this partial review, not a defect in phases 1–4.
-- The accepted guardrail threat model and its documented check/read race remain unchanged. This review does not claim hostile-agent containment.
+## Remaining verification and release limits
+
+The implementation plan's section 15 explicitly records the manual release checks and the Claude Code `! aiallow` check as not done. This review did not perform them.
+
+Before treating the feature as release-ready, record the planned disposable-machine evidence for actual UAC approval/decline, successful protected writes and post-replacement permissions, add/revoke/edit interaction, setup/update/reset, and failure recovery. Exercise the real approval dialogs, including expiry changes and cancellation. Current tests largely reach the write actions' refusal paths; successful commits and their outcome codes have not been demonstrated by this review.
+
+The local run used Windows Python 3.12 and Windows PowerShell 5.1. The Python 3.9/3.11/3.13 and Ubuntu CI matrix was not rerun or independently verified. No Linux-container execution was necessary for the Windows-only writer, but portable Python compatibility still depends on that matrix.
+
+No real UAC launch, privileged store mutation, ACL change, installation, or manual UI action was performed. The documented guardrail threat model and accepted hook check/read race remain unchanged.
 
 ## Next action
 
-Blocking findings: none. Nonblocking findings: CODE-001 and CODE-002.
+Blocking finding: **CODE-003**. Nonblocking finding: **CODE-004**. Closed findings: CODE-001 and CODE-002.
 
-Suggested next implementer action: disposition the two findings and make the focused test/tooling corrections, then continue the planned implementation. No fixes were made as part of this review.
+The next implementer should disposition both new findings and make focused corrections with regression tests. No implementation fixes were made in this review.
 
 Paste-ready prompt:
 
-> Read exception-grants-implementation-review.md. Disposition CODE-001 and CODE-002, make the accepted corrections, and run the relevant checks. Keep the changes limited to those findings and report the results before proceeding to another phase.
+> Read exception-grants-implementation-review.md. Disposition CODE-003 and CODE-004, fix the accepted findings, and add focused regression tests. Preserve the exact scope shown in the approval dialog and propagate setup's final verification failure. Run the relevant tests and lint checks, then report the results. Keep the manual privileged release checks explicitly outstanding until performed in a disposable environment.
