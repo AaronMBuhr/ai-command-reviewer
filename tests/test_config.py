@@ -283,3 +283,92 @@ def test_claude_project_dir_is_not_a_config_location(
     )
     monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(hostile))
     assert config.load_config().reviewer_url is None
+
+
+# ------------------------------------------------------------- exception grants
+
+
+def test_exceptions_default_to_disabled_with_the_default_path() -> None:
+    settings = config.load_config().exceptions
+    assert settings.enabled is False
+    assert settings.grants_path == config._default_grants_path()
+    assert settings.grants_path.lower().endswith(r"\cc-ai-review\grants.jsonl")
+
+
+def test_exceptions_can_be_enabled_in_yaml(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    write_config(tmp_path, monkeypatch, "exceptions:\n  enabled: true\n")
+    assert config.load_config().exceptions.enabled is True
+
+
+def test_exceptions_env_override_disables(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    write_config(tmp_path, monkeypatch, "exceptions:\n  enabled: true\n")
+    monkeypatch.setenv("CC_AI_REVIEW__EXCEPTIONS__ENABLED", "false")
+    assert config.load_config().exceptions.enabled is False
+
+
+def test_custom_grants_path_is_normalized(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    write_config(tmp_path, monkeypatch, "exceptions:\n  grants_path: 'D:/a/./b/../g.jsonl'\n")
+    assert config.load_config().exceptions.grants_path == r"D:\a\g.jsonl"
+
+
+def test_grants_path_off_from_the_environment_mentions_booleans(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("CC_AI_REVIEW__EXCEPTIONS__GRANTS_PATH", "off")
+    with pytest.raises(config.ConfigError, match="booleans"):
+        _ = config.load_config().exceptions
+
+
+@pytest.mark.parametrize("path", [
+    "grants.jsonl", r"sub\grants.jsonl", r"\x\g.jsonl", "/x/g.jsonl",
+    r"\\server\share\g.jsonl", r"%NO_SUCH_VARIABLE_CC%\g.jsonl",
+])
+def test_grants_path_must_start_with_a_drive_letter(
+    path: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("NO_SUCH_VARIABLE_CC", raising=False)
+    write_config(tmp_path, monkeypatch, f"exceptions:\n  grants_path: '{path}'\n")
+    with pytest.raises(config.ConfigError, match="drive letter"):
+        _ = config.load_config().exceptions
+
+
+@pytest.mark.parametrize("text", ["", "exceptions:\n", "exceptions: null\n"])
+def test_absent_or_null_exceptions_section_means_defaults(
+    text: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    write_config(tmp_path, monkeypatch, text or "policy: {}\n")
+    settings = config.load_config().exceptions
+    assert settings.enabled is False
+    assert settings.grants_path == config._default_grants_path()
+
+
+@pytest.mark.parametrize("value", ["false", "0", "''", "[]", "5", "'yes'"])
+def test_false_like_exceptions_section_fails_closed(
+    value: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    write_config(tmp_path, monkeypatch, f"exceptions: {value}\n")
+    with pytest.raises(config.ConfigError, match="exceptions must be a mapping"):
+        _ = config.load_config().exceptions
+
+
+def test_invalid_enabled_names_the_exceptions_section(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    write_config(tmp_path, monkeypatch, "exceptions:\n  enabled: maybe\n")
+    with pytest.raises(config.ConfigError, match=r"^exceptions\.enabled"):
+        _ = config.load_config().exceptions
+
+
+@pytest.mark.parametrize("value", ["5", "true", "[]", "''", "'   '"])
+def test_grants_path_of_the_wrong_type_fails_closed(
+    value: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    write_config(tmp_path, monkeypatch, f"exceptions:\n  grants_path: {value}\n")
+    with pytest.raises(config.ConfigError, match="grants_path"):
+        _ = config.load_config().exceptions
