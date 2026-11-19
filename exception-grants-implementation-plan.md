@@ -151,7 +151,7 @@ where one applies.
 | D13 | Canonical stored form: keys in table order, no spaces, `"` `\` and U+0000–U+001F escaped (`\n` `\r` `\t` `\b` `\f` short forms, otherwise `\u00XX`), plus U+2028 and U+2029 as `\u2028` and `\u2029`. Every other character is written as raw UTF-8. | One deterministic output from the writer. |
 | D14 | The help block is built with `json.dumps(..., ensure_ascii=True, separators=(",", ":"))`. | It shows safely in any terminal, hides no invisible characters, and decodes back to the exact command. |
 | D15 | During `edit`, the editor's text has `\r\n` turned into `\n` and gets a final `\n` before validation. | Windows text boxes use CRLF. A raw CR is never part of a command, because commands store CR as the escape `\r`. |
-| D16 | The writer parses JSON with .NET's `JsonReaderWriterFactory` (`System.Runtime.Serialization`), plus a custom walker that checks for duplicate keys and types. | It ships with Windows, is fast, and is not a cmdlet. If a shared fixture shows it accepting something Python rejects, see Risk R3 in section 11. |
+| D16 | **Revised after R3 was confirmed (user-approved).** The writer parses JSON with a small hand-written recursive-descent parser (a PowerShell class) that follows the grammar Python's `json` module accepts: whitespace is space, tab, LF and CR; raw control characters in strings are errors; escapes are the RFC 8259 set with exactly four hex digits for `\u`, and a high-plus-low surrogate escape pair becomes one character; numbers follow `-?(0\|[1-9][0-9]*)(\.[0-9]+)?([eE][-+]?[0-9]+)?`; `NaN`/`Infinity` are errors; nothing may follow the top-level value. Duplicate keys are reported when their object closes, which is exactly when Python's `object_pairs_hook` runs, so an earlier syntax error wins in both. | `JsonReaderWriterFactory` accepts `NaN`, trailing commas, empty input and two top-level values, and loses trailing commas from its output entirely (R3). |
 | D17 | Parsed JSON objects in PowerShell are stored in `System.Collections.Specialized.OrderedDictionary` built with `[StringComparer]::Ordinal`. Keys are always read with `$d['key']` and `$d.Contains('key')`, never `$d.key`. Never use `@{}` or `[ordered]@{}`. | PowerShell hashtables ignore key case, so `name` and `Name` would merge into one key while Python keeps both (PLAN-002). |
 | D18 | Length limits count **Unicode code points**. In Python that is `len(s)`. In .NET, count characters and treat a surrogate pair as one. | Python and .NET string lengths differ for emoji and other non-BMP characters. |
 | D19 | SID rule, shared by both sides: `^S-1-(0\|[1-9][0-9]{0,14})(-(0\|[1-9][0-9]{0,9})){1,15}$`. The authority must be below 2^48, and each sub-authority at most 4294967295. No .NET constructor decides validity. | A regex alone allows numbers too large to be real, and the constructor's rules are undocumented (review clarification). |
@@ -1628,3 +1628,23 @@ From the second plan review. These are checks for whoever reviews the code, not 
 - **Release evidence:** successful protected writes, permissions after replacement,
   elevation, mutex contention and reset are proven only by the disposable-VM checks (10.3).
   Unit and validate-only tests don't replace them.
+
+---
+
+## 15. Implementation notes (phases 1-8)
+
+Where the build departed from or refined this plan, so a reviewer can check each one.
+
+| Topic | What was done | Why |
+|---|---|---|
+| R3 / D16 | The writer uses a hand-written JSON parser (user-approved). | The .NET reader accepted inputs Python rejects. |
+| D21-D24, I4a | Added during implementation (section 1). | Parity gaps found while writing the fixtures. |
+| SID structure | A SID inside a security descriptor may have 0-15 sub-authorities (`S-1-5` is valid). Fixture `sid-zero-subauthorities` now expects `write-right`. D19's stricter rule still applies to user SIDs in grant files. | Windows and .NET's `RawSecurityDescriptor` accept 0; the first Python parser wrongly called it malformed. |
+| Phase 4 tests | In new files `test_grant_review.py` and `test_grant_adapters.py`; the adapter round trip replaces the store check in a test-only wrapper script. | Keeps the existing tests untouched; a temp store can never pass the real check. |
+| Result messages | `Show-Result` prints instead of showing a message box when stdout or stderr is redirected. | Automated tests would otherwise hang. It only changes how a result is shown; confirmations always use a dialog, and the UAC launch never redirects output. |
+| Bulk fixtures | `tests/ps/writer-harness.ps1` loads the writer as a library and runs its validate functions for every fixture in one PowerShell process. The real `validate-*` entry points are tested separately. | One process per fixture took minutes. |
+| Dialog callbacks | Event handlers call named functions directly; no `& $scriptblock` and no `GetNewClosure`. | Rule A18. |
+| Extra writer action | `validate-roundtrip` (read-only) for the JSON array-shape checkpoint. | Section 14. |
+| Generators | `tests/fixtures/grants/make_fixtures.py` regenerates the grant fixtures; description goldens are reviewed writer output. | Fixtures stay reproducible. |
+| `aiallow` quoting | Values are quoted; parameter names stay bare; a value ending in `\` is refused. | A trailing backslash would escape the closing quote. |
+| Not done | Manual release checks (design section 11, plan 10.3) and the `! aiallow` test in Claude Code. | They need a real UAC prompt and a disposable machine. |
