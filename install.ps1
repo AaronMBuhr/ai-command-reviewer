@@ -10,7 +10,7 @@ $configDir = Join-Path $env:APPDATA "cc-ai-review"
 
 Write-Host "Installing hook scripts to $hookDir"
 New-Item -ItemType Directory -Force -Path $hookDir | Out-Null
-foreach ($f in @("review_core.py", "config.py", "providers.py",
+foreach ($f in @("review_core.py", "config.py", "providers.py", "exception_grants.py",
                  "safe-command-review-hook.py", "codex-command-review-hook.py",
                  "windsurf-command-review-hook.py", "devin-command-review-hook.py",
                  "command_confirmation.py", "antigravity-command-review-hook.py",
