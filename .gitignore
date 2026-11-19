@@ -19,6 +19,8 @@ dev/
 
 *.jsonl
 review-log.jsonl
+# Exception-grant test fixtures are JSON Lines files that must be tracked.
+!tests/fixtures/grants/files/*.jsonl
 
 # Windows cache artifacts created under an unexpanded environment path.
 /%SystemDrive%/
