@@ -21,7 +21,9 @@ The same reasoning restricts ``.env`` loading to API keys (see
 from __future__ import annotations
 
 import copy
+import ntpath
 import os
+import re
 import sys
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -69,7 +71,22 @@ DEFAULTS: Dict[str, Any] = {
         "delete_decision": "auto",
         "log_path": None,
     },
+    # Exception grants (see exception-grants-design.md). Off by default; while
+    # off, the hook never reads grants and adds nothing to reasons.
+    "exceptions": {
+        "enabled": False,
+        # None means the default protected store under ProgramData.
+        "grants_path": None,
+    },
 }
+
+#: Fallback grants location, used when the ProgramData known folder can't be
+#: looked up (and on non-Windows platforms, where grants are unsupported).
+DEFAULT_GRANTS_PATH = r"C:\ProgramData\cc-ai-review\grants.jsonl"
+
+#: A drive-letter absolute Windows path, e.g. ``C:\...`` or ``C:/...``. The
+#: same rule as in exception_grants (decision D3): no UNC, no rooted-without-drive.
+_DRIVE_PATH_RE = re.compile(r"^[A-Za-z]:[\\/]")
 
 #: Order used when `reviewer.provider` is "auto".
 PROVIDER_AUTO_ORDER: Tuple[str, ...] = ("claude", "chatgpt", "gemini")
@@ -291,7 +308,7 @@ _TRUE_WORDS = {"true", "yes", "on", "1"}
 _FALSE_WORDS = {"false", "no", "off", "0"}
 
 
-def coerce_bool(value: Any, field: str) -> bool:
+def coerce_bool(value: Any, field: str, section: str = "policy") -> bool:
     """Interpret a config value as a boolean, strictly.
 
     Plain ``bool(value)`` is wrong here: YAML quotes are easy to add by accident,
@@ -311,7 +328,7 @@ def coerce_bool(value: Any, field: str) -> bool:
         if text in _FALSE_WORDS:
             return False
     raise ConfigError(
-        f"policy.{field} must be a boolean (true/false), got {value!r}. "
+        f"{section}.{field} must be a boolean (true/false), got {value!r}. "
         f"If you quoted it in YAML, remove the quotes."
     )
 
@@ -408,6 +425,72 @@ class Policy:
 
 
 @dataclass(frozen=True)
+class ExceptionSettings:
+    enabled: bool
+    #: Always a normalized, drive-letter absolute Windows path.
+    grants_path: str
+
+
+def _default_grants_path() -> str:
+    """The grants file under the ProgramData known folder.
+
+    Uses ``SHGetKnownFolderPath`` rather than ``%ProgramData%``: environment
+    variables are user-controlled, the known-folder API is not. Any failure, and
+    every non-Windows platform, falls back to :data:`DEFAULT_GRANTS_PATH`.
+    """
+    if sys.platform != "win32":
+        return DEFAULT_GRANTS_PATH
+    try:
+        program_data = _known_folder_program_data()
+    except (OSError, AttributeError, ValueError):
+        return DEFAULT_GRANTS_PATH
+    if not program_data or not _DRIVE_PATH_RE.match(program_data):
+        return DEFAULT_GRANTS_PATH
+    return ntpath.join(program_data, APP_DIR_NAME, "grants.jsonl")
+
+
+def _known_folder_program_data() -> str:
+    """Look up FOLDERID_ProgramData through shell32. Windows only."""
+    import ctypes
+    from ctypes import wintypes
+
+    class GUID(ctypes.Structure):
+        _fields_ = [
+            ("Data1", wintypes.DWORD),
+            ("Data2", wintypes.WORD),
+            ("Data3", wintypes.WORD),
+            ("Data4", ctypes.c_ubyte * 8),
+        ]
+
+    # FOLDERID_ProgramData = {62AB5D82-FDC1-4DC3-A9DD-070D1D495D97}
+    folder_id = GUID(
+        0x62AB5D82, 0xFDC1, 0x4DC3,
+        (ctypes.c_ubyte * 8)(0xA9, 0xDD, 0x07, 0x0D, 0x1D, 0x49, 0x5D, 0x97),
+    )
+    shell32 = ctypes.WinDLL("shell32", use_last_error=True)
+    ole32 = ctypes.WinDLL("ole32", use_last_error=True)
+    get_path = shell32.SHGetKnownFolderPath
+    get_path.argtypes = [
+        ctypes.POINTER(GUID), wintypes.DWORD, wintypes.HANDLE,
+        ctypes.POINTER(ctypes.c_wchar_p),
+    ]
+    get_path.restype = ctypes.c_long  # HRESULT
+    free = ole32.CoTaskMemFree
+    free.argtypes = [ctypes.c_void_p]
+    free.restype = None
+
+    buffer = ctypes.c_wchar_p()
+    result = get_path(ctypes.byref(folder_id), 0, None, ctypes.byref(buffer))
+    try:
+        if result != 0:
+            raise OSError(f"SHGetKnownFolderPath failed with HRESULT {result:#x}")
+        return buffer.value or ""
+    finally:
+        # The shell allocates the string even on some failures; always free it.
+        free(buffer)
+
+
+@dataclass(frozen=True)
 class Config:
     data: Dict[str, Any] = field(default_factory=dict)
     source_path: Optional[Path] = None
@@ -453,6 +536,39 @@ class Config:
             delete_decision="ask",
             log_path=str(log_path) if log_path else None,
         )
+
+    @property
+    def exceptions(self) -> ExceptionSettings:
+        raw = self.data.get("exceptions")
+        # Only "absent" and null mean defaults. `false`, 0, "", [] and other
+        # scalars are mistakes and must fail closed. Don't write `... or {}`
+        # here: that would quietly turn `exceptions: false` into the defaults.
+        if raw is None:
+            raw = {}
+        if not isinstance(raw, dict):
+            raise ConfigError(f"exceptions must be a mapping, got {raw!r}.")
+
+        enabled = coerce_bool(raw.get("enabled", False), "enabled", section="exceptions")
+
+        path_value = raw.get("grants_path")
+        if path_value is None:
+            path = _default_grants_path()
+        elif isinstance(path_value, str) and path_value.strip():
+            path = os.path.expandvars(os.path.expanduser(path_value.strip()))
+        else:
+            raise ConfigError(
+                f"exceptions.grants_path must be a path or null, got {path_value!r}. "
+                "If you set it via an environment variable, 'off'/'false' are read "
+                "as booleans."
+            )
+        # A drive letter is required, not just "absolute": a rooted path without
+        # a drive, a UNC path, or an unexpanded %VARIABLE% is not allowed.
+        if not _DRIVE_PATH_RE.match(path):
+            raise ConfigError(
+                "exceptions.grants_path must start with a drive letter, "
+                f"e.g. C:\\..., got {path!r}."
+            )
+        return ExceptionSettings(enabled=enabled, grants_path=ntpath.normpath(path))
 
     def _reviewer_setting(self, key: str) -> Optional[str]:
         value = (self.data.get("reviewer") or {}).get(key)

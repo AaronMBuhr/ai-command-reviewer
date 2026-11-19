@@ -11,10 +11,11 @@ config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/cc-ai-review"
 
 echo "Installing hook scripts to $hook_dir"
 mkdir -p "$hook_dir"
-for f in review_core.py config.py providers.py \
+for f in review_core.py config.py providers.py exception_grants.py \
          safe-command-review-hook.py codex-command-review-hook.py \
          windsurf-command-review-hook.py devin-command-review-hook.py \
-         command_confirmation.py antigravity-command-review-hook.py devin_feedback.py; do
+         command_confirmation.py antigravity-command-review-hook.py devin_feedback.py \
+         aiallow.py; do
   cp "$src/.claude/hooks/$f" "$hook_dir/$f"
 done
 
@@ -188,4 +189,6 @@ Then set an API key for the provider you want:
 Verify it works:
 
   $python_bin "$hook_dir/safe-command-review-hook.py" < "$src/examples/hook-input-dangerous.json"
+
+Exception grants are Windows-only in this version.
 EOF

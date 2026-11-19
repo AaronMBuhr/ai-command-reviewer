@@ -265,7 +265,8 @@ def test_incomplete_upgrade_never_passes_an_ask(command: str, decision: str,
                                                 tmp_path: Path) -> None:
     install = tmp_path / "incomplete_install"
     install.mkdir()
-    for name in [ADAPTER.name, "review_core.py", "config.py", "providers.py"]:
+    for name in [ADAPTER.name, "review_core.py", "config.py", "providers.py",
+                 "exception_grants.py"]:
         shutil.copyfile(ADAPTER.with_name(name), install / name)
     proc = subprocess.run(
         [sys.executable, str(install / ADAPTER.name)],

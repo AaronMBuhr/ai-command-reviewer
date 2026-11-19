@@ -141,3 +141,14 @@ policy:
 
   # Append one JSON line per decision, including silent allows. Opt-in.
   log_path: null
+
+exceptions:
+  # Temporary exception grants (Windows only). See README "Exception grants".
+  # Master switch, off by default. While false, the hook never reads grants
+  # and adds nothing to reasons. Run `aiallow setup` first (UAC prompt).
+  enabled: false
+
+  # Protected grants file. null = C:\ProgramData\cc-ai-review\grants.jsonl
+  # (looked up through the ProgramData known folder). A custom path must be
+  # provisioned by hand with admin-only permissions; `aiallow setup` refuses it.
+  grants_path: null

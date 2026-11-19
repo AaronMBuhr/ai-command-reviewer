@@ -24,10 +24,12 @@ import threading
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
+import exception_grants
 import providers
 from config import (
     Config,
     ConfigError,
+    ExceptionSettings,
     Policy,
     load_config,
     load_dotenv_files,  # re-exported for adapter compatibility
@@ -101,6 +103,9 @@ class Review:
     flags: List[str] = field(default_factory=list)
     dont_ask_again_safe: bool = False
     source: str = "local"
+    # Lines printed after the footer, never trimmed by the particulars limit.
+    # Used for the exception-grant help block, which must survive intact.
+    extra_lines: List[str] = field(default_factory=list)
 
     def clamp(self) -> "Review":
         if self.decision not in VALID_DECISIONS:
@@ -140,6 +145,7 @@ def render_reason(review: Review, max_particulars: int = 10) -> str:
         lines.append(_BULLET + item)
     if not review.dont_ask_again_safe:
         lines.append(_FOOTER)
+    lines.extend(review.extra_lines)
     return "\n".join(lines)
 
 
@@ -1535,6 +1541,42 @@ def _external_review_with_deadline(config: Config, policy: Policy,
     return outcome["review"]
 
 
+#: Flags no exception grant can lift, and which never get the grant-help block.
+NON_LIFTABLE_FLAGS = frozenset({
+    "exception-store-access", "missing-command", "hook-input-parse-error",
+})
+
+
+def _exceptions_active(settings: ExceptionSettings) -> bool:
+    return settings.enabled and sys.platform == "win32"
+
+
+def _finalize(final: Review, *, config: Config, policy: Policy,
+              exceptions: ExceptionSettings, command: str, cwd: str, description: str,
+              host: str, tool: str, grant_note: Optional[str]) -> Review:
+    """Shared last step: the refused-.env note, grant help, and the decision log."""
+    # Surface a hostile or mistaken .env rather than ignoring it silently.
+    if config.refused_dotenv_keys:
+        refused = ", ".join(sorted(config.refused_dotenv_keys))
+        final.particulars = merge_particulars(
+            final.particulars,
+            [f"Ignored non-API-key settings in a .env file: {refused}. "
+             f"Set these in the environment or the config file instead."],
+        )
+
+    blocked = final.decision in ("deny", "ask")
+    liftable = not (set(final.flags) & NON_LIFTABLE_FLAGS)
+    if _exceptions_active(exceptions) and blocked and command and liftable:
+        if grant_note:
+            final.extra_lines.append(grant_note)
+        final.extra_lines.extend(exception_grants.help_lines(command, cwd, host, tool))
+    elif exceptions.enabled and sys.platform != "win32" and blocked:
+        final.extra_lines.append("Exception grants are not supported on this platform.")
+
+    log_review(command, cwd, description, final, policy)
+    return final
+
+
 def review_payload(payload: Dict[str, Any],
                    config: Optional[Config] = None,
                    host: str = "claude") -> ReviewResult:
@@ -1586,8 +1628,54 @@ def review_payload(payload: Dict[str, Any],
         log_review(command, cwd, description, review, policy)
         return ReviewResult(event_name, command, cwd, description, review)
 
+    exceptions = config.exceptions
+    tool = tool_name(payload)
+    finish = dict(config=config, policy=policy, exceptions=exceptions, command=command,
+                  cwd=cwd, description=description, host=host, tool=tool)
+
+    # While grants are on, the grant store and its tools are off limits to the
+    # AI: only the user may run aiallow or change grants (design 4.2).
+    if _exceptions_active(exceptions) and \
+            exception_grants.mentions_protected_store(command, exceptions.grants_path):
+        final = Review(
+            decision="deny",
+            headline="Blocked: this command touches the exception-grant store or tools.",
+            particulars=["Only the user may run aiallow or change grants."],
+            flags=["exception-store-access"],
+        )
+        final = _finalize(final, grant_note=None, **finish)
+        return ReviewResult(event_name, command, cwd, description, final)
+
     local = local_review(command, cwd, description, policy)
 
+    # Grants are checked whatever the local decision was; otherwise a command the
+    # external reviewer denies could never be unlocked.
+    grant: Optional[exception_grants.Grant] = None
+    grant_note: Optional[str] = None
+    if _exceptions_active(exceptions) and not (set(local.flags) & NON_LIFTABLE_FLAGS):
+        lookup = exception_grants.find_grant(exceptions, command, cwd, host, tool)
+        grant, grant_note = lookup.grant, lookup.note
+
+    if grant is not None:
+        # The user already decided, so the external review is skipped.
+        final = Review(
+            decision="allow",
+            source="grant",
+            headline=f"Allowed by your exception grant '{grant.name}'.",
+            particulars=[exception_grants.scope_summary(grant)],
+            flags=["exception-grant", "exception-grant-id:" + grant.id],
+            dont_ask_again_safe=False,
+        )
+    else:
+        final = _reviewed_decision(config, policy, local, command, cwd, description)
+
+    final = _finalize(final.clamp(), grant_note=grant_note, **finish)
+    return ReviewResult(event_name, command, cwd, description, final)
+
+
+def _reviewed_decision(config: Config, policy: Policy, local: Review, command: str,
+                       cwd: str, description: str) -> Review:
+    """The normal path: local heuristics plus the external reviewer, combined."""
     external: Optional[Review] = None
     external_error: Optional[str] = None
 
@@ -1608,16 +1696,4 @@ def review_payload(payload: Dict[str, Any],
         except Exception as exc:
             external_error = f"{type(exc).__name__}: {exc}"
 
-    final = combine_reviews(local, external, external_error, policy).clamp()
-
-    # Surface a hostile or mistaken .env rather than ignoring it silently.
-    if config.refused_dotenv_keys:
-        refused = ", ".join(sorted(config.refused_dotenv_keys))
-        final.particulars = merge_particulars(
-            final.particulars,
-            [f"Ignored non-API-key settings in a .env file: {refused}. "
-             f"Set these in the environment or the config file instead."],
-        )
-
-    log_review(command, cwd, description, final, policy)
-    return ReviewResult(event_name, command, cwd, description, final)
+    return combine_reviews(local, external, external_error, policy)

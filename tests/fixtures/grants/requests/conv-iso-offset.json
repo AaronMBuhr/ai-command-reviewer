@@ -1,0 +1,1 @@
+{"v":1,"name":"push-x","commands":["git push"],"tool":"Bash","where":"dir","cwd":"{TMP}","hosts":null,"expires":"2026-11-20T10:00:00+02:00","why":""}

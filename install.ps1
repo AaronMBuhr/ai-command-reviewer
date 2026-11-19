@@ -10,13 +10,16 @@ $configDir = Join-Path $env:APPDATA "cc-ai-review"
 
 Write-Host "Installing hook scripts to $hookDir"
 New-Item -ItemType Directory -Force -Path $hookDir | Out-Null
-foreach ($f in @("review_core.py", "config.py", "providers.py",
+foreach ($f in @("review_core.py", "config.py", "providers.py", "exception_grants.py",
                  "safe-command-review-hook.py", "codex-command-review-hook.py",
                  "windsurf-command-review-hook.py", "devin-command-review-hook.py",
                  "command_confirmation.py", "antigravity-command-review-hook.py",
-                 "devin_feedback.py")) {
+                 "devin_feedback.py", "aiallow.py", "setup-grants.ps1")) {
     Copy-Item (Join-Path $src ".claude\hooks\$f") (Join-Path $hookDir $f) -Force
 }
+# The writer's source copy. `aiallow setup` installs it into the admin-only
+# grants folder; only that protected copy ever runs elevated for grants.
+Copy-Item (Join-Path $src "grant-writer\grant-writer.ps1") (Join-Path $hookDir "grant-writer.ps1") -Force
 
 New-Item -ItemType Directory -Force -Path $configDir | Out-Null
 $configTarget = Join-Path $configDir "config.yaml"
@@ -44,6 +47,11 @@ if (-not $pythonBin) {
 }
 
 $hookPath = Join-Path $hookDir "safe-command-review-hook.py"
+
+# aiallow.cmd runs the exception-grant CLI with the resolved interpreter.
+# This installer never elevates; `aiallow setup` asks for UAC itself.
+$aiallowCmd = Join-Path $hookDir "aiallow.cmd"
+[System.IO.File]::WriteAllText($aiallowCmd, "@`"$pythonBin`" `"%~dp0aiallow.py`" %*`r`n")
 
 # JSON has no idea about Windows paths: a lone backslash starts an escape
 # sequence, so "C:\Python311\python.exe" pasted into settings.json is a parse
@@ -217,4 +225,6 @@ Then set an API key for the provider you want:
 Verify it works:
 
   Get-Content "$src\examples\hook-input-dangerous.json" -Raw | & "$pythonBin" "$hookPath"
+
+Optional: exception grants. Run '$aiallowCmd setup' (UAC prompt), then set exceptions.enabled: true.
 "@

@@ -1,0 +1,3 @@
+# Fixture files are compared as raw bytes; never convert their line endings.
+tests/fixtures/grants/** -text
+tests/fixtures/acl/** -text

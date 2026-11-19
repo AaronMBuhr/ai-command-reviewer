@@ -1,0 +1,12 @@
+Allow these exact commands (through tool 'Bash'):
+
+    git push
+
+Starting in: any folder of the git repo at {TMP_REPO}
+For user: {USER} (S-1-5-21-1-2-3-1001)
+On AI hosts: claude, codex
+Until: {LOCAL} local time (2 hours)
+Name: push-x
+
+--- AI's stated reason (not checked) ---
+(none given)

@@ -1,0 +1,15 @@
+Allow these exact commands (through tool 'shell'):
+
+    git push --force
+
+    ·echo⇥x ⟦U+200B⟧
+
+This host doesn't say which shell runs the command.
+Starting in: any folder
+For user: {USER} (S-1-5-21-1-2-3-1001)
+On AI hosts: codex
+Until revoked (no expiry). This is an indefinite permission.
+Name: push-x
+
+--- AI's stated reason (not checked) ---
+(none given)

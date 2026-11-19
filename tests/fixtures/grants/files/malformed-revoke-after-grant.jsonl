@@ -1,0 +1,2 @@
+{"v":1,"type":"grant","id":"g-20261119T170000Z-00000011","name":"push-x","ts":"2026-11-19T17:00:00Z","user":"S-1-5-21-1-2-3-1001","user_display":"PC\\user","commands":["git push"],"tool":"Bash","where":"any","path":null,"hosts":null,"expires":"2026-11-19T19:00:00Z","why":""}
+{"v":1,"type":"revoke","id":"r-20261119T171000Z-00000012","ts":"2026-11-19T17:10:00Z","user":"S-1-5-21-1-2-3-1001"}

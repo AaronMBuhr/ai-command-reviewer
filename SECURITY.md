@@ -154,6 +154,28 @@ Documented rather than fixed, so nobody assumes coverage that is not there:
   or commands outside the configured hook events do not pass through this
   reviewer. Matchers and host permission rules determine coverage.
 
+## Exception grants
+
+Exception grants (Windows only, off by default) let the user approve exact
+commands for a limited time. They follow the same guardrail threat model as the
+rest of this tool: they protect against a well-meaning but mistaken AI granting
+itself an exception, against its explanation not matching its request, and
+against broken files or permission mistakes silently widening what is allowed.
+They do not defend against an AI deliberately working around them; such an AI
+could already edit the hook or its config.
+
+- Grants live in an admin-only folder. Only the grant writer, run through a UAC
+  prompt from System32 PowerShell with .NET calls only, adds to them, after the
+  user approves a description the writer generates from the request's fields.
+- `aiallow setup` is the one deliberate exception to "nothing user-writable runs
+  elevated": it is an installer the user chooses to run, and it is where trust
+  in the writer copy is established.
+- The hook checks the store's owner and permissions, and those of every parent
+  folder, before reading it. Any problem, any invalid line, or an elevated AI
+  process means no grant applies.
+- Accepted gap: the hook checks the file and then reads it, so it could in
+  theory be swapped in between. This is accepted under the guardrail model.
+
 ## Supported scope
 
 The latest commit on `main`. There are no maintained release branches.
