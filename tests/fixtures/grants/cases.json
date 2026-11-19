@@ -1,0 +1,1455 @@
+[
+ {
+  "id": "req-valid-minimal",
+  "kind": "request",
+  "path": "requests/valid-minimal.json",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001"
+ },
+ {
+  "id": "req-valid-full",
+  "kind": "request",
+  "path": "requests/valid-full.json",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001"
+ },
+ {
+  "id": "req-valid-repo",
+  "kind": "request",
+  "path": "requests/valid-repo.json",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001"
+ },
+ {
+  "id": "req-valid-any-null-cwd",
+  "kind": "request",
+  "path": "requests/valid-any-null-cwd.json",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001"
+ },
+ {
+  "id": "req-expires-never",
+  "kind": "request",
+  "path": "requests/expires-never.json",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001"
+ },
+ {
+  "id": "req-expires-iso-offset",
+  "kind": "request",
+  "path": "requests/expires-iso-offset.json",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001"
+ },
+ {
+  "id": "req-expires-iso-z",
+  "kind": "request",
+  "path": "requests/expires-iso-z.json",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001"
+ },
+ {
+  "id": "req-command-emoji",
+  "kind": "request",
+  "path": "requests/command-emoji.json",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001"
+ },
+ {
+  "id": "req-command-tab-crlf",
+  "kind": "request",
+  "path": "requests/command-tab-crlf.json",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001"
+ },
+ {
+  "id": "req-command-8000",
+  "kind": "request",
+  "path": "requests/command-8000.json",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001"
+ },
+ {
+  "id": "req-command-8000-emoji",
+  "kind": "request",
+  "path": "requests/command-8000-emoji.json",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001"
+ },
+ {
+  "id": "req-why-1000-emoji",
+  "kind": "request",
+  "path": "requests/why-1000-emoji.json",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001"
+ },
+ {
+  "id": "req-twenty-commands",
+  "kind": "request",
+  "path": "requests/twenty-commands.json",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001"
+ },
+ {
+  "id": "req-tool-empty",
+  "kind": "request",
+  "path": "requests/tool-empty.json",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001"
+ },
+ {
+  "id": "req-tool-40",
+  "kind": "request",
+  "path": "requests/tool-40.json",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001"
+ },
+ {
+  "id": "req-name-40",
+  "kind": "request",
+  "path": "requests/name-40.json",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001"
+ },
+ {
+  "id": "req-all-hosts",
+  "kind": "request",
+  "path": "requests/all-hosts.json",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001"
+ },
+ {
+  "id": "req-key-order-free",
+  "kind": "request",
+  "path": "requests/key-order-free.json",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001"
+ },
+ {
+  "id": "req-expires-iso-nozone",
+  "kind": "request",
+  "path": "requests/expires-iso-nozone.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "expires"
+ },
+ {
+  "id": "req-expires-past",
+  "kind": "request",
+  "path": "requests/expires-past.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "expired",
+  "field": "expires"
+ },
+ {
+  "id": "req-expires-equal-now",
+  "kind": "request",
+  "path": "requests/expires-equal-now.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "expired",
+  "field": "expires"
+ },
+ {
+  "id": "req-expires-fraction",
+  "kind": "request",
+  "path": "requests/expires-fraction.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "expires"
+ },
+ {
+  "id": "req-expires-month-13",
+  "kind": "request",
+  "path": "requests/expires-month-13.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "expires"
+ },
+ {
+  "id": "req-expires-offset-24",
+  "kind": "request",
+  "path": "requests/expires-offset-24.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "expires"
+ },
+ {
+  "id": "req-expires-zero-duration",
+  "kind": "request",
+  "path": "requests/expires-zero-duration.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "expires"
+ },
+ {
+  "id": "req-expires-long-duration",
+  "kind": "request",
+  "path": "requests/expires-long-duration.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "expires"
+ },
+ {
+  "id": "req-expires-number",
+  "kind": "request",
+  "path": "requests/expires-number.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-type",
+  "field": "expires"
+ },
+ {
+  "id": "req-expires-null",
+  "kind": "request",
+  "path": "requests/expires-null.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-type",
+  "field": "expires"
+ },
+ {
+  "id": "req-expires-unicode-digit",
+  "kind": "request",
+  "path": "requests/expires-unicode-digit.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "expires"
+ },
+ {
+  "id": "req-empty-commands",
+  "kind": "request",
+  "path": "requests/empty-commands.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "commands"
+ },
+ {
+  "id": "req-commands-string",
+  "kind": "request",
+  "path": "requests/commands-string.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-type",
+  "field": "commands"
+ },
+ {
+  "id": "req-empty-command",
+  "kind": "request",
+  "path": "requests/empty-command.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "commands"
+ },
+ {
+  "id": "req-whitespace-command",
+  "kind": "request",
+  "path": "requests/whitespace-command.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "commands"
+ },
+ {
+  "id": "req-x1c-command",
+  "kind": "request",
+  "path": "requests/x1c-command.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "commands"
+ },
+ {
+  "id": "req-nbsp-command",
+  "kind": "request",
+  "path": "requests/nbsp-command.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "commands"
+ },
+ {
+  "id": "req-duplicate-commands",
+  "kind": "request",
+  "path": "requests/duplicate-commands.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "commands"
+ },
+ {
+  "id": "req-21-commands",
+  "kind": "request",
+  "path": "requests/21-commands.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "commands"
+ },
+ {
+  "id": "req-command-8001",
+  "kind": "request",
+  "path": "requests/command-8001.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "commands"
+ },
+ {
+  "id": "req-command-8001-emoji",
+  "kind": "request",
+  "path": "requests/command-8001-emoji.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "commands"
+ },
+ {
+  "id": "req-command-nul",
+  "kind": "request",
+  "path": "requests/command-nul.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "commands"
+ },
+ {
+  "id": "req-command-lone-surrogate",
+  "kind": "request",
+  "path": "requests/command-lone-surrogate.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "commands"
+ },
+ {
+  "id": "req-command-number",
+  "kind": "request",
+  "path": "requests/command-number.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-type",
+  "field": "commands"
+ },
+ {
+  "id": "req-command-case-distinct",
+  "kind": "request",
+  "path": "requests/command-case-distinct.json",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001"
+ },
+ {
+  "id": "req-cwd-with-any",
+  "kind": "request",
+  "path": "requests/cwd-with-any.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "cwd"
+ },
+ {
+  "id": "req-cwd-missing-dir",
+  "kind": "request",
+  "path": "requests/cwd-missing-dir.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "missing-field",
+  "field": "cwd"
+ },
+ {
+  "id": "req-cwd-null-dir",
+  "kind": "request",
+  "path": "requests/cwd-null-dir.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-type",
+  "field": "cwd"
+ },
+ {
+  "id": "req-cwd-relative",
+  "kind": "request",
+  "path": "requests/cwd-relative.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "cwd"
+ },
+ {
+  "id": "req-cwd-unc",
+  "kind": "request",
+  "path": "requests/cwd-unc.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "cwd"
+ },
+ {
+  "id": "req-cwd-rooted",
+  "kind": "request",
+  "path": "requests/cwd-rooted.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "cwd"
+ },
+ {
+  "id": "req-cwd-posix",
+  "kind": "request",
+  "path": "requests/cwd-posix.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "cwd"
+ },
+ {
+  "id": "req-cwd-dotdot",
+  "kind": "request",
+  "path": "requests/cwd-dotdot.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "cwd"
+ },
+ {
+  "id": "req-cwd-dot",
+  "kind": "request",
+  "path": "requests/cwd-dot.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "cwd"
+ },
+ {
+  "id": "req-cwd-empty",
+  "kind": "request",
+  "path": "requests/cwd-empty.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "cwd"
+ },
+ {
+  "id": "req-where-bad",
+  "kind": "request",
+  "path": "requests/where-bad.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "where"
+ },
+ {
+  "id": "req-where-case",
+  "kind": "request",
+  "path": "requests/where-case.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "where"
+ },
+ {
+  "id": "req-hosts-empty",
+  "kind": "request",
+  "path": "requests/hosts-empty.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "hosts"
+ },
+ {
+  "id": "req-hosts-unknown",
+  "kind": "request",
+  "path": "requests/hosts-unknown.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "hosts"
+ },
+ {
+  "id": "req-hosts-dup",
+  "kind": "request",
+  "path": "requests/hosts-dup.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "hosts"
+ },
+ {
+  "id": "req-hosts-case",
+  "kind": "request",
+  "path": "requests/hosts-case.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "hosts"
+ },
+ {
+  "id": "req-hosts-string",
+  "kind": "request",
+  "path": "requests/hosts-string.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-type",
+  "field": "hosts"
+ },
+ {
+  "id": "req-v-true",
+  "kind": "request",
+  "path": "requests/v-true.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-type",
+  "field": "v"
+ },
+ {
+  "id": "req-v-float",
+  "kind": "request",
+  "path": "requests/v-float.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-type",
+  "field": "v"
+ },
+ {
+  "id": "req-v-exponent",
+  "kind": "request",
+  "path": "requests/v-exponent.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-type",
+  "field": "v"
+ },
+ {
+  "id": "req-v-2",
+  "kind": "request",
+  "path": "requests/v-2.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "v"
+ },
+ {
+  "id": "req-v-minus-zero",
+  "kind": "request",
+  "path": "requests/v-minus-zero.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "v"
+ },
+ {
+  "id": "req-v-huge",
+  "kind": "request",
+  "path": "requests/v-huge.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "v"
+ },
+ {
+  "id": "req-v-string",
+  "kind": "request",
+  "path": "requests/v-string.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-type",
+  "field": "v"
+ },
+ {
+  "id": "req-unknown-field",
+  "kind": "request",
+  "path": "requests/unknown-field.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "unknown-field",
+  "field": "extra"
+ },
+ {
+  "id": "req-missing-why",
+  "kind": "request",
+  "path": "requests/missing-why.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "missing-field",
+  "field": "why"
+ },
+ {
+  "id": "req-missing-v",
+  "kind": "request",
+  "path": "requests/missing-v.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "missing-field",
+  "field": "v"
+ },
+ {
+  "id": "req-duplicate-key",
+  "kind": "request",
+  "path": "requests/duplicate-key.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "duplicate-key",
+  "field": "name"
+ },
+ {
+  "id": "req-duplicate-key-escaped",
+  "kind": "request",
+  "path": "requests/duplicate-key-escaped.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "duplicate-key",
+  "field": "name"
+ },
+ {
+  "id": "req-name-then-upper-name",
+  "kind": "request",
+  "path": "requests/name-then-upper-name.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "unknown-field",
+  "field": "Name"
+ },
+ {
+  "id": "req-upper-name-then-name",
+  "kind": "request",
+  "path": "requests/upper-name-then-name.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "unknown-field",
+  "field": "Name"
+ },
+ {
+  "id": "req-v-and-upper-v",
+  "kind": "request",
+  "path": "requests/v-and-upper-v.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "unknown-field",
+  "field": "V"
+ },
+ {
+  "id": "req-upper-commands",
+  "kind": "request",
+  "path": "requests/upper-commands.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "unknown-field",
+  "field": "Commands"
+ },
+ {
+  "id": "req-nested-duplicate-first",
+  "kind": "request",
+  "path": "requests/nested-duplicate-first.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "duplicate-key",
+  "field": "a"
+ },
+ {
+  "id": "req-name-upper",
+  "kind": "request",
+  "path": "requests/name-upper.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "name"
+ },
+ {
+  "id": "req-name-41",
+  "kind": "request",
+  "path": "requests/name-41.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "name"
+ },
+ {
+  "id": "req-name-trailing-newline",
+  "kind": "request",
+  "path": "requests/name-trailing-newline.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "name"
+ },
+ {
+  "id": "req-name-leading-dash",
+  "kind": "request",
+  "path": "requests/name-leading-dash.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "name"
+ },
+ {
+  "id": "req-name-number",
+  "kind": "request",
+  "path": "requests/name-number.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-type",
+  "field": "name"
+ },
+ {
+  "id": "req-tool-41",
+  "kind": "request",
+  "path": "requests/tool-41.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "tool"
+ },
+ {
+  "id": "req-tool-null",
+  "kind": "request",
+  "path": "requests/tool-null.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-type",
+  "field": "tool"
+ },
+ {
+  "id": "req-why-1001",
+  "kind": "request",
+  "path": "requests/why-1001.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "why"
+ },
+ {
+  "id": "req-why-1001-emoji",
+  "kind": "request",
+  "path": "requests/why-1001-emoji.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "why"
+ },
+ {
+  "id": "req-why-lone-surrogate",
+  "kind": "request",
+  "path": "requests/why-lone-surrogate.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "why"
+ },
+ {
+  "id": "req-tool-lone-surrogate",
+  "kind": "request",
+  "path": "requests/tool-lone-surrogate.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "tool"
+ },
+ {
+  "id": "req-cwd-lone-surrogate",
+  "kind": "request",
+  "path": "requests/cwd-lone-surrogate.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-value",
+  "field": "cwd"
+ },
+ {
+  "id": "req-why-surrogate-pair-escaped",
+  "kind": "request",
+  "path": "requests/why-surrogate-pair-escaped.json",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001"
+ },
+ {
+  "id": "req-nan",
+  "kind": "request",
+  "path": "requests/nan.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "json-syntax",
+  "field": null
+ },
+ {
+  "id": "req-infinity",
+  "kind": "request",
+  "path": "requests/infinity.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "json-syntax",
+  "field": null
+ },
+ {
+  "id": "req-trailing-comma",
+  "kind": "request",
+  "path": "requests/trailing-comma.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "json-syntax",
+  "field": null
+ },
+ {
+  "id": "req-duplicate-then-trailing-comma",
+  "kind": "request",
+  "path": "requests/duplicate-then-trailing-comma.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "json-syntax",
+  "field": null
+ },
+ {
+  "id": "req-single-quotes",
+  "kind": "request",
+  "path": "requests/single-quotes.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "json-syntax",
+  "field": null
+ },
+ {
+  "id": "req-raw-tab-in-string",
+  "kind": "request",
+  "path": "requests/raw-tab-in-string.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "json-syntax",
+  "field": null
+ },
+ {
+  "id": "req-top-array",
+  "kind": "request",
+  "path": "requests/top-array.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "not-object",
+  "field": null
+ },
+ {
+  "id": "req-top-string",
+  "kind": "request",
+  "path": "requests/top-string.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "not-object",
+  "field": null
+ },
+ {
+  "id": "req-empty-input",
+  "kind": "request",
+  "path": "requests/empty-input.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "json-syntax",
+  "field": null
+ },
+ {
+  "id": "req-two-values",
+  "kind": "request",
+  "path": "requests/two-values.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "json-syntax",
+  "field": null
+ },
+ {
+  "id": "req-bom",
+  "kind": "request",
+  "path": "requests/bom.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bom",
+  "field": null
+ },
+ {
+  "id": "req-invalid-utf8",
+  "kind": "request",
+  "path": "requests/invalid-utf8.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "encoding",
+  "field": null
+ },
+ {
+  "id": "req-deep-nesting",
+  "kind": "request",
+  "path": "requests/deep-nesting.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "json-syntax",
+  "field": null
+ },
+ {
+  "id": "req-depth-64",
+  "kind": "request",
+  "path": "requests/depth-64.json",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001",
+  "code": "bad-type",
+  "field": "why"
+ },
+ {
+  "id": "req-leading-whitespace",
+  "kind": "request",
+  "path": "requests/leading-whitespace.json",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "for_user": "S-1-5-21-1-2-3-1001"
+ },
+ {
+  "id": "file-empty",
+  "kind": "file",
+  "path": "files/empty.jsonl",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "active": {}
+ },
+ {
+  "id": "file-one-grant",
+  "kind": "file",
+  "path": "files/one-grant.jsonl",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "active": {
+   "S-1-5-21-1-2-3-1001": [
+    "g-20261119T170000Z-00000001"
+   ]
+  }
+ },
+ {
+  "id": "file-grant-then-revoke",
+  "kind": "file",
+  "path": "files/grant-then-revoke.jsonl",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "active": {}
+ },
+ {
+  "id": "file-revoke-other-name",
+  "kind": "file",
+  "path": "files/revoke-other-name.jsonl",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "active": {
+   "S-1-5-21-1-2-3-1001": [
+    "g-20261119T170000Z-00000005"
+   ]
+  }
+ },
+ {
+  "id": "file-revoke-star-then-grant",
+  "kind": "file",
+  "path": "files/revoke-star-then-grant.jsonl",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "active": {
+   "S-1-5-21-1-2-3-1001": [
+    "g-20261119T170000Z-00000008"
+   ]
+  }
+ },
+ {
+  "id": "file-revoke-other-user",
+  "kind": "file",
+  "path": "files/revoke-other-user.jsonl",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "active": {
+   "S-1-5-21-1-2-3-1001": [
+    "g-20261119T170000Z-0000000a"
+   ]
+  }
+ },
+ {
+  "id": "file-two-users",
+  "kind": "file",
+  "path": "files/two-users.jsonl",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "active": {
+   "S-1-5-21-1-2-3-1001": [
+    "g-20261119T170000Z-0000000c"
+   ],
+   "S-1-5-21-1-2-3-1002": [
+    "g-20261119T170000Z-0000000d"
+   ]
+  }
+ },
+ {
+  "id": "file-expires-null",
+  "kind": "file",
+  "path": "files/expires-null.jsonl",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "active": {
+   "S-1-5-21-1-2-3-1001": [
+    "g-20261119T170000Z-0000000e"
+   ]
+  }
+ },
+ {
+  "id": "file-expired",
+  "kind": "file",
+  "path": "files/expired.jsonl",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "active": {}
+ },
+ {
+  "id": "file-rich-grant",
+  "kind": "file",
+  "path": "files/rich-grant.jsonl",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "active": {
+   "S-1-5-21-1-2-3-1001": [
+    "g-20261119T170000Z-00000010"
+   ]
+  }
+ },
+ {
+  "id": "file-malformed-revoke-after-grant",
+  "kind": "file",
+  "path": "files/malformed-revoke-after-grant.jsonl",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "code": "missing-field",
+  "field": "name",
+  "line": 2
+ },
+ {
+  "id": "file-truncated-last-line",
+  "kind": "file",
+  "path": "files/truncated-last-line.jsonl",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "code": "json-syntax",
+  "field": null,
+  "line": 2
+ },
+ {
+  "id": "file-missing-final-newline",
+  "kind": "file",
+  "path": "files/missing-final-newline.jsonl",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "code": "no-final-newline",
+  "field": null,
+  "line": null
+ },
+ {
+  "id": "file-blank-line",
+  "kind": "file",
+  "path": "files/blank-line.jsonl",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "code": "blank-line",
+  "field": null,
+  "line": 2
+ },
+ {
+  "id": "file-crlf",
+  "kind": "file",
+  "path": "files/crlf.jsonl",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "code": "cr",
+  "field": null,
+  "line": null
+ },
+ {
+  "id": "file-bom",
+  "kind": "file",
+  "path": "files/bom.jsonl",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "code": "bom",
+  "field": null,
+  "line": null
+ },
+ {
+  "id": "file-invalid-utf8",
+  "kind": "file",
+  "path": "files/invalid-utf8.jsonl",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "code": "encoding",
+  "field": null,
+  "line": null
+ },
+ {
+  "id": "file-duplicate-grant-id",
+  "kind": "file",
+  "path": "files/duplicate-grant-id.jsonl",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "code": "duplicate-id",
+  "field": "id",
+  "line": 2
+ },
+ {
+  "id": "file-bad-sid-leading-zero",
+  "kind": "file",
+  "path": "files/bad-sid-leading-zero.jsonl",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "code": "bad-value",
+  "field": "user",
+  "line": 1
+ },
+ {
+  "id": "file-bad-sid-sub-too-big",
+  "kind": "file",
+  "path": "files/bad-sid-sub-too-big.jsonl",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "code": "bad-value",
+  "field": "user",
+  "line": 1
+ },
+ {
+  "id": "file-sid-sub-max",
+  "kind": "file",
+  "path": "files/sid-sub-max.jsonl",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "active": {
+   "S-1-5-21-4294967295": [
+    "g-20261119T170000Z-0000001d"
+   ]
+  }
+ },
+ {
+  "id": "file-bad-sid-authority",
+  "kind": "file",
+  "path": "files/bad-sid-authority.jsonl",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "code": "bad-value",
+  "field": "user",
+  "line": 1
+ },
+ {
+  "id": "file-sid-authority-max",
+  "kind": "file",
+  "path": "files/sid-authority-max.jsonl",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "active": {
+   "S-1-281474976710655-1": [
+    "g-20261119T170000Z-0000001f"
+   ]
+  }
+ },
+ {
+  "id": "file-bad-sid-16-subs",
+  "kind": "file",
+  "path": "files/bad-sid-16-subs.jsonl",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "code": "bad-value",
+  "field": "user",
+  "line": 1
+ },
+ {
+  "id": "file-sid-15-subs",
+  "kind": "file",
+  "path": "files/sid-15-subs.jsonl",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "active": {
+   "S-1-5-1-1-1-1-1-1-1-1-1-1-1-1-1-1-1": [
+    "g-20261119T170000Z-00000021"
+   ]
+  }
+ },
+ {
+  "id": "file-missing-user-display",
+  "kind": "file",
+  "path": "files/missing-user-display.jsonl",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "code": "missing-field",
+  "field": "user_display",
+  "line": 1
+ },
+ {
+  "id": "file-empty-user-display",
+  "kind": "file",
+  "path": "files/empty-user-display.jsonl",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "code": "bad-value",
+  "field": "user_display",
+  "line": 1
+ },
+ {
+  "id": "file-path-with-any",
+  "kind": "file",
+  "path": "files/path-with-any.jsonl",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "code": "bad-value",
+  "field": "path",
+  "line": 1
+ },
+ {
+  "id": "file-null-path-with-dir",
+  "kind": "file",
+  "path": "files/null-path-with-dir.jsonl",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "code": "bad-value",
+  "field": "path",
+  "line": 1
+ },
+ {
+  "id": "file-ts-without-z",
+  "kind": "file",
+  "path": "files/ts-without-z.jsonl",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "code": "bad-value",
+  "field": "ts",
+  "line": 1
+ },
+ {
+  "id": "file-expires-offset",
+  "kind": "file",
+  "path": "files/expires-offset.jsonl",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "code": "bad-value",
+  "field": "expires",
+  "line": 1
+ },
+ {
+  "id": "file-type-unknown",
+  "kind": "file",
+  "path": "files/type-unknown.jsonl",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "code": "bad-value",
+  "field": "type",
+  "line": 1
+ },
+ {
+  "id": "file-type-missing",
+  "kind": "file",
+  "path": "files/type-missing.jsonl",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "code": "missing-field",
+  "field": "type",
+  "line": 1
+ },
+ {
+  "id": "file-extra-field",
+  "kind": "file",
+  "path": "files/extra-field.jsonl",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "code": "unknown-field",
+  "field": "note",
+  "line": 1
+ },
+ {
+  "id": "file-revoke-star",
+  "kind": "file",
+  "path": "files/revoke-star.jsonl",
+  "valid": true,
+  "now": "2026-11-19T18:00:00Z",
+  "active": {}
+ },
+ {
+  "id": "file-revoke-bad-name",
+  "kind": "file",
+  "path": "files/revoke-bad-name.jsonl",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "code": "bad-value",
+  "field": "name",
+  "line": 1
+ },
+ {
+  "id": "file-grant-id-as-revoke",
+  "kind": "file",
+  "path": "files/grant-id-as-revoke.jsonl",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "code": "bad-value",
+  "field": "id",
+  "line": 1
+ },
+ {
+  "id": "file-top-array",
+  "kind": "file",
+  "path": "files/top-array.jsonl",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "code": "not-object",
+  "field": null,
+  "line": 1
+ },
+ {
+  "id": "file-v-true",
+  "kind": "file",
+  "path": "files/v-true.jsonl",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "code": "bad-type",
+  "field": "v",
+  "line": 1
+ },
+ {
+  "id": "file-nan",
+  "kind": "file",
+  "path": "files/nan.jsonl",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "code": "json-syntax",
+  "field": null,
+  "line": 1
+ },
+ {
+  "id": "file-user-display-lone-surrogate",
+  "kind": "file",
+  "path": "files/user-display-lone-surrogate.jsonl",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "code": "bad-value",
+  "field": "user_display",
+  "line": 1
+ },
+ {
+  "id": "file-path-lone-surrogate",
+  "kind": "file",
+  "path": "files/path-lone-surrogate.jsonl",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "code": "bad-value",
+  "field": "path",
+  "line": 1
+ },
+ {
+  "id": "file-line-bom",
+  "kind": "file",
+  "path": "files/line-bom.jsonl",
+  "valid": false,
+  "now": "2026-11-19T18:00:00Z",
+  "code": "json-syntax",
+  "field": null,
+  "line": 2
+ }
+]
